@@ -1,0 +1,39 @@
+[project]
+name = "rl-evo-lab"
+version = "0.1.0"
+description = "Evolutionary Reinforcement Learning: reproduction and extension of EDER"
+authors = [
+    {name = "eoinmcallister", email = "eoinmc.james@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "torch>=2.3",
+    "numpy>=1.26",
+    "gymnasium>=1.0",
+]
+
+[project.optional-dependencies]
+mujoco = ["gymnasium[mujoco]>=1.0"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short"
