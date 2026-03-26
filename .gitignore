@@ -40,5 +40,10 @@ checkpoints/
 *.pth
 wandb/
 
+# Claude Code
+.claude/
+CLAUDE.md
+CONTEXT.md
+
 # OS
 .DS_Store
