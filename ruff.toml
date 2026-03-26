@@ -1,0 +1,9 @@
+line-length = 100
+src = ["src"]
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

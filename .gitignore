@@ -13,9 +13,6 @@ build/
 venv/
 env/
 
-# Poetry
-poetry.lock
-
 # Testing / coverage
 .pytest_cache/
 .coverage
@@ -24,6 +21,7 @@ htmlcov/
 # Type checking
 .mypy_cache/
 .ruff_cache/
+.ty_cache/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -42,8 +40,6 @@ wandb/
 
 # Claude Code
 .claude/
-CLAUDE.md
-CONTEXT.md
 
 # OS
 .DS_Store

@@ -11,6 +11,9 @@ dependencies = [
     "torch>=2.3",
     "numpy>=1.26",
     "gymnasium>=1.0",
+    "wandb (>=0.25.1,<0.26.0)",
+    "matplotlib (>=3.10.8,<4.0.0)",
+    "pandas (>=3.0.1,<4.0.0)",
 ]
 
 [project.optional-dependencies]
@@ -20,19 +23,16 @@ mujoco = ["gymnasium[mujoco]>=1.0"]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
-    "ruff>=0.4",
+    "ruff>=0.9",
+    "ty>=0.0.1a1",
 ]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.ruff]
-line-length = 100
-src = ["src"]
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+[tool.ty]
+python-version = "3.12"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
