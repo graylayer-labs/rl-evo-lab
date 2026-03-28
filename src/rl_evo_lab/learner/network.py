@@ -8,7 +8,7 @@ import torch.nn as nn
 class QNetwork(nn.Module):
     """Shared MLP architecture for DQN learner and ES actor."""
 
-    def __init__(self, obs_dim: int, act_dim: int, hidden: int = 128) -> None:
+    def __init__(self, obs_dim: int, act_dim: int, hidden: int = 64) -> None:
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(obs_dim, hidden),
