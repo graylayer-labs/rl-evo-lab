@@ -17,7 +17,7 @@ class DQNLearner:
     def __init__(self, cfg: EDERConfig, device: torch.device) -> None:
         self.cfg = cfg
         self.device = device
-        self.policy_net = QNetwork(cfg.obs_dim, cfg.act_dim).to(device)
+        self.policy_net = QNetwork(cfg.obs_dim, cfg.act_dim, hidden=cfg.hidden_dim).to(device)
         self.target_net = copy.deepcopy(self.policy_net)
         self.target_net.eval()
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=cfg.dqn_lr)
@@ -59,6 +59,36 @@ class DQNLearner:
                 total += reward
         self.policy_net.train()
         return total / n_episodes
+
+    def collect_episode(self, env: gym.Env, buffer: ReplayBuffer, episode: int) -> tuple[float, int]:
+        """Run one ε-greedy episode and push transitions to buffer.
+
+        Returns (total_extrinsic_return, n_steps).
+        """
+        decay = self.cfg.epsilon_decay_episodes
+        frac = min(1.0, episode / max(decay, 1))
+        epsilon = self.cfg.epsilon_start + frac * (self.cfg.epsilon_end - self.cfg.epsilon_start)
+
+        obs, _ = env.reset()
+        done = False
+        total_reward = 0.0
+        n_steps = 0
+        self.policy_net.eval()
+        while not done:
+            if np.random.random() < epsilon:
+                action = env.action_space.sample()
+            else:
+                with torch.no_grad():
+                    obs_t = torch.from_numpy(obs).float().unsqueeze(0).to(self.device)
+                    action = self.policy_net(obs_t).argmax(dim=1).item()
+            next_obs, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            buffer.push(obs, action, float(reward), next_obs, float(done))
+            obs = next_obs
+            total_reward += float(reward)
+            n_steps += 1
+        self.policy_net.train()
+        return total_reward, n_steps
 
     def get_weights(self) -> np.ndarray:
         return self.policy_net.get_flat_params()
