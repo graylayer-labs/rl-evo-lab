@@ -87,7 +87,7 @@ Before migrating, verify that rl-core's version covers the local usage. The loca
 
 To add rl-core as a dependency:
 ```toml
-"rl-core @ git+https://github.com/eoin-james/rl-core.git@v0.2.0"
+"rl-core @ git+https://github.com/graylayer-labs/rl-core.git@v1.0.0"
 ```
 
 Key metric separation for this repo (use `NamespacedLogger`):
