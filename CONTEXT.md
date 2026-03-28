@@ -98,6 +98,41 @@ rₐ = rₑ + β · rᵢ
 
 ---
 
+---
+
+## GPU / MPS Roadmap
+
+### Current State
+All training runs on CPU. Networks are tiny (2-layer MLP, hidden_dim=128) and batch
+sizes are small (64). For these workloads, CPU outperforms MPS because:
+- MPS dispatch overhead > actual computation for small tensors
+- ES workers do single-sample inference (batch=1) — GPU is always slower here
+- The real bottleneck is the Python/gymnasium env loop, not the network
+
+### When MPS Becomes Worth It
+| Trigger | Why |
+|---|---|
+| SAC/DDPG learner (continuous control) | Larger networks, actor+critic+value, more gradient steps |
+| hidden_dim ≥ 512 | Matrix multiply large enough to amortise MPS dispatch |
+| batch_size ≥ 256 | GPU parallelism starts to dominate per-sample overhead |
+| CNN policy (pixel obs / Atari) | Conv operations are where MPS genuinely shines |
+| Brax / MuJoCo MJX envs | Entire env step runs as a GPU kernel — no Python loop |
+
+### Recommended Migration Path
+1. Add SAC learner (next roadmap item) — hidden_dim ≥ 256, actor+critic networks
+2. Move to Brax (JAX-based physics, runs on MPS via JAX Metal backend)
+   - Envs: Ant, HalfCheetah, Hopper, Humanoid
+   - ES population episodes become batched GPU operations, not a Python for-loop
+3. At that point: keep ES workers on CPU (batch=1 inference), move learner training to MPS
+
+### Note on ThreadPoolExecutor + MPS
+Multiple threads queueing small operations to MPS causes contention and is slower than
+CPU. Current design (threads for ES workers) intentionally keeps worker inference on CPU.
+Only the learner training loop (large batch, single call) should move to MPS when the
+time comes.
+
+---
+
 ## Key References
 - Khadka & Tumer (2018) — ERL: Evolution-Guided Policy Gradient
 - Salimans et al. (2017) — ES as scalable alternative to RL
