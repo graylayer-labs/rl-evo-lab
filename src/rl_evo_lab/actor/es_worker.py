@@ -19,6 +19,8 @@ class WorkerResult:
     extrinsic_return: float  # sum of extrinsic rewards
     transitions: list[tuple] = field(default_factory=list)
     # Each tuple: (obs, action, reward_extrinsic, next_obs, done)
+    embeddings: list[np.ndarray] = field(default_factory=list)
+    # Cached IDN embeddings — reused by ESActor for global buffer update (avoids recompute)
 
 
 def run_worker_episode(
@@ -29,9 +31,10 @@ def run_worker_episode(
     cfg: EDERConfig,
     idn: InverseDynamicsNetwork,
     novelty: EpisodicNovelty,
-    beta: float,
+    effective_beta: float,
     noise_sign: int,
     device: torch.device,
+    global_novelty: EpisodicNovelty | None = None,
 ) -> WorkerResult:
     """Run a single ES worker episode with perturbed parameters.
 
@@ -46,7 +49,7 @@ def run_worker_episode(
     worker_params = base_params + noise_sign * sigma * noise_vector
 
     # Load into a fresh QNetwork (CPU; no gradients needed)
-    net = QNetwork(cfg.obs_dim, cfg.act_dim)
+    net = QNetwork(cfg.obs_dim, cfg.act_dim, hidden=cfg.hidden_dim)
     net.set_flat_params(worker_params)
     net.eval()
 
@@ -59,6 +62,7 @@ def run_worker_episode(
     fitness = 0.0
     extrinsic_return = 0.0
     transitions: list[tuple] = []
+    embeddings: list[np.ndarray] = []
 
     while not done:
         obs_t = torch.from_numpy(np.array(obs, dtype=np.float32)).unsqueeze(0)
@@ -73,15 +77,21 @@ def run_worker_episode(
 
         if cfg.use_novelty:
             embedding = idn.embed(obs_arr, next_obs_arr)
-            intrinsic_reward = novelty.score(embedding)
+            embeddings.append(embedding)  # cache for global buffer update
+            if effective_beta > 0.0:
+                episodic_score = novelty.score(embedding)
+                global_score = global_novelty.query(embedding) if global_novelty is not None else 0.0
+                intrinsic_reward = episodic_score + global_score
+            else:
+                novelty.add(embedding)   # keep episodic memory warm during warmup
+                intrinsic_reward = 0.0
         else:
             intrinsic_reward = 0.0
 
-        augmented_reward = float(reward) + beta * intrinsic_reward
+        augmented_reward = float(reward) + effective_beta * intrinsic_reward
         fitness += augmented_reward
         extrinsic_return += float(reward)
 
-        # Only extrinsic reward goes into the transition / replay buffer
         transitions.append((obs_arr, int(action), float(reward), next_obs_arr, bool(done)))
 
         obs = next_obs
@@ -92,4 +102,5 @@ def run_worker_episode(
         fitness=fitness,
         extrinsic_return=extrinsic_return,
         transitions=transitions,
+        embeddings=embeddings,
     )
