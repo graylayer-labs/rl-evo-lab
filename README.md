@@ -1,8 +1,19 @@
 # rl-evo-lab
 
-Reproduction and extension of **EDER** (Evolutionary Distributed Experience Replay), from the MSc thesis *"Improving Exploration in Evolutionary Reinforcement Learning through Novelty Search"* — NUI Galway, 2021.
+Evolutionary reinforcement learning project focused on **EDER** (Evolutionary Distributed Experience Replay): a hybrid system where an **Evolution Strategy actor population** explores, a **DQN learner** trains from replay only, and an **intrinsic novelty signal** drives broader state-space coverage.
+
+This repo started as a reproduction of the MSc thesis *"Improving Exploration in Evolutionary Reinforcement Learning through Novelty Search"* (NUI Galway, 2021), then grew into a cleaner experiment harness with stronger ablations, replay-buffer filtering, and reproducible multi-seed comparisons.
 
 EDER replaces epsilon-greedy exploration with an **Evolution Strategy (ES) actor population** that fills the replay buffer with diverse transitions. A **DQN learner** trains purely from that buffer — no env interaction during training. An **intrinsic novelty reward** (KNN over learned state embeddings) keeps the ES population exploring new state regions rather than converging to a local optimum.
+
+---
+
+## Why this repo is worth looking at
+
+- Hybrid RL architecture with a clean actor/learner separation through replay only
+- Reproducible experiment runner with multi-seed comparisons and cached reruns
+- Explicit ablations across `EDER`, `ES+DQN`, and pure `DQN`
+- Concrete engineering work beyond reproduction: replay-buffer filtering, config generation, result comparison tooling, and README automation
 
 ---
 
