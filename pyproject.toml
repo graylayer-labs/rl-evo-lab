@@ -33,9 +33,14 @@ dev = [
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.ty]
+[tool.ty.environment]
 python-version = "3.12"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--tb=short"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.15.8"
+ty = "^0.0.26"
+

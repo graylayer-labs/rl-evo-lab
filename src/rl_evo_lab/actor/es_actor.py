@@ -19,7 +19,7 @@ class ActorStats:
     mean_augmented_fitness: float
     mean_extrinsic_return: float
     idn_loss: float
-    total_env_steps: int       # sum of all worker episode lengths this generation
+    total_env_steps: int  # sum of all worker episode lengths this generation
     effective_beta: float = 0.0
 
 
@@ -32,10 +32,10 @@ def _rank_normalize(fitnesses: np.ndarray) -> np.ndarray:
     n = len(fitnesses)
     # argsort gives indices that would sort ascending; assign ranks 0..n-1
     ranks = np.empty(n, dtype=np.float32)
-    order = np.argsort(fitnesses)          # ascending: worst → best
+    order = np.argsort(fitnesses)  # ascending: worst → best
     ranks[order] = np.arange(n, dtype=np.float32)
     if n > 1:
-        ranks = ranks / (n - 1) - 0.5     # map [0, n-1] → [-0.5, 0.5]
+        ranks = ranks / (n - 1) - 0.5  # map [0, n-1] → [-0.5, 0.5]
     else:
         ranks[:] = 0.0
     return ranks
@@ -53,7 +53,7 @@ class ESActor:
         self.theta_base: np.ndarray = _init_net.get_flat_params().copy()
 
         # IDN loss EMA — used to gauge embedding quality for adaptive beta
-        self._idn_loss_ema: float = 1.0   # start high (worst case)
+        self._idn_loss_ema: float = 1.0  # start high (worst case)
         self._idn_loss_init: float | None = None  # recorded at end of warmup
 
         # Learner eval tracking — used to decay beta once the learner converges
@@ -125,7 +125,9 @@ class ESActor:
         Always returns an even number when antithetic sampling is enabled.
         """
         progress = self._convergence_progress()
-        n = round(self.cfg.es_n_workers + progress * (self.cfg.es_workers_min - self.cfg.es_n_workers))
+        n = round(
+            self.cfg.es_n_workers + progress * (self.cfg.es_workers_min - self.cfg.es_n_workers)
+        )
         n = max(self.cfg.es_workers_min, n)
         if self.cfg.es_antithetic and n % 2 != 0:
             n = max(self.cfg.es_workers_min, n - 1)
@@ -138,6 +140,49 @@ class ESActor:
         have an up-to-date signal to work from.
         """
         self._learner_eval = reward
+
+    # ------------------------------------------------------------------
+    # Buffer push filtering
+    # ------------------------------------------------------------------
+
+    def _select_workers_to_push(
+        self,
+        results: list[WorkerResult],
+        rank_weights: np.ndarray,
+    ) -> list[int]:
+        """Return indices of workers whose transitions should be pushed to the buffer.
+
+        If buffer_push_alpha is None, returns all indices (backward compatible).
+        Otherwise scores each worker episode by:
+            push_score = alpha * fitness_rank + (1-alpha) * novelty_rank
+        and selects top-K by combined score, plus a novelty floor override.
+        """
+        cfg = self.cfg
+        if cfg.buffer_push_alpha is None:
+            return list(range(len(results)))
+
+        n = len(results)
+        alpha = cfg.buffer_push_alpha
+
+        # Fitness rank [0,1]: remap existing [-0.5, 0.5] ranks
+        fitness_ranks = rank_weights + 0.5
+
+        # Novelty rank [0,1]: rank-normalise mean_novelty scores across workers
+        novelty_scores = np.array([r.mean_novelty for r in results], dtype=np.float32)
+        novelty_ranks = _rank_normalize(novelty_scores) + 0.5
+
+        # Combined score
+        combined = alpha * fitness_ranks + (1.0 - alpha) * novelty_ranks
+
+        # Novelty floor: top buffer_novelty_floor fraction always enters
+        n_floor = max(1, int(n * cfg.buffer_novelty_floor))
+        floor_idx = set(np.argsort(novelty_scores)[-n_floor:].tolist())
+
+        # Top-K by combined score (default: all workers)
+        top_k = cfg.buffer_push_top_k if cfg.buffer_push_top_k is not None else n
+        top_k_idx = set(np.argsort(combined)[-top_k:].tolist())
+
+        return sorted(top_k_idx | floor_idx)
 
     # ------------------------------------------------------------------
     # Public interface
@@ -160,8 +205,8 @@ class ESActor:
         cfg = self.cfg
 
         # ---- Compute convergence-decayed quantities for this episode --
-        eff_beta     = self._effective_beta(episode_num)
-        eff_sigma    = self._effective_sigma()
+        eff_beta = self._effective_beta(episode_num)
+        eff_sigma = self._effective_sigma()
         eff_n_workers = self._effective_n_workers()
 
         # ---- Build list of (seed, sign) pairs -------------------------
@@ -221,14 +266,13 @@ class ESActor:
 
         delta /= n_workers_actual * eff_sigma
         self.theta_base = (
-            self.theta_base
-            + cfg.es_lr * delta
-            - cfg.es_weight_decay * self.theta_base
+            self.theta_base + cfg.es_lr * delta - cfg.es_weight_decay * self.theta_base
         )
 
-        # ---- Push all transitions to buffer --------------------------
-        for result in results:
-            for obs, action, reward, next_obs, done in result.transitions:
+        # ---- Push selected transitions to buffer ---------------------
+        push_indices = self._select_workers_to_push(results, rank_weights)
+        for i in push_indices:
+            for obs, action, reward, next_obs, done in results[i].transitions:
                 buffer.push(obs, action, reward, next_obs, done)
 
         # ---- Train IDN on collected transitions ----------------------
@@ -241,16 +285,15 @@ class ESActor:
 
         idn_loss = 0.0
         if cfg.use_novelty and all_actions:
-            obs_arr     = np.stack(all_obs).astype(np.float32)
+            obs_arr = np.stack(all_obs).astype(np.float32)
             next_obs_arr = np.stack(all_next_obs).astype(np.float32)
-            actions_arr  = np.array(all_actions, dtype=np.int64)
+            actions_arr = np.array(all_actions, dtype=np.int64)
             idn_loss = idn.update(obs_arr, next_obs_arr, actions_arr, cfg.idn_updates_per_episode)
 
             # Update IDN loss EMA (α=0.05 for slow tracking)
             self._idn_loss_ema = 0.95 * self._idn_loss_ema + 0.05 * idn_loss
             # Record baseline IDN loss at the end of warmup
-            if (self._idn_loss_init is None
-                    and episode_num == cfg.novelty_warmup_episodes - 1):
+            if self._idn_loss_init is None and episode_num == cfg.novelty_warmup_episodes - 1:
                 self._idn_loss_init = self._idn_loss_ema
 
             # Add this generation's embeddings to the global novelty buffer.

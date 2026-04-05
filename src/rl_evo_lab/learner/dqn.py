@@ -60,7 +60,9 @@ class DQNLearner:
         self.policy_net.train()
         return total / n_episodes
 
-    def collect_episode(self, env: gym.Env, buffer: ReplayBuffer, episode: int) -> tuple[float, int]:
+    def collect_episode(
+        self, env: gym.Env, buffer: ReplayBuffer, episode: int
+    ) -> tuple[float, int]:
         """Run one ε-greedy episode and push transitions to buffer.
 
         Returns (total_extrinsic_return, n_steps).

@@ -1,22 +1,22 @@
 from __future__ import annotations
 
+import gymnasium as gym
 import numpy as np
 import pytest
-import gymnasium as gym
 import torch
 
 from rl_evo_lab.actor.es_actor import ESActor, _rank_normalize
-from rl_evo_lab.actor.es_worker import run_worker_episode
+from rl_evo_lab.actor.es_worker import WorkerResult, run_worker_episode
 from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
 from rl_evo_lab.intrinsic.episodic_novelty import EpisodicNovelty
 from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
 from rl_evo_lab.learner.network import QNetwork
 from rl_evo_lab.utils.config import EDERConfig
 
-
 # ---------------------------------------------------------------------------
 # 1. Rank normalisation
 # ---------------------------------------------------------------------------
+
 
 def test_rank_normalization():
     fitnesses = np.array([10.0, 5.0, 1.0, 8.0], dtype=np.float32)
@@ -35,6 +35,7 @@ def test_rank_normalization():
 # ---------------------------------------------------------------------------
 # 2. Worker episode produces valid WorkerResult
 # ---------------------------------------------------------------------------
+
 
 def test_worker_episode_returns_transitions():
     cfg = EDERConfig(es_n_workers=2)
@@ -86,6 +87,7 @@ def test_worker_episode_returns_transitions():
 # 3. ESActor updates theta_base after one generation
 # ---------------------------------------------------------------------------
 
+
 def test_es_actor_updates_params():
     cfg = EDERConfig(
         es_n_workers=4,
@@ -117,3 +119,86 @@ def test_es_actor_updates_params():
     assert isinstance(stats.mean_augmented_fitness, float)
     assert isinstance(stats.mean_extrinsic_return, float)
     assert isinstance(stats.idn_loss, float)
+
+
+# ---------------------------------------------------------------------------
+# 4. _select_workers_to_push selection logic
+# ---------------------------------------------------------------------------
+
+
+def _make_result(fitness: float, mean_novelty: float) -> WorkerResult:
+    dummy_noise = np.zeros(1, dtype=np.float32)
+    return WorkerResult(
+        noise_vector=dummy_noise,
+        noise_sign=+1,
+        fitness=fitness,
+        extrinsic_return=fitness,
+        mean_novelty=mean_novelty,
+    )
+
+
+def test_select_workers_backward_compat():
+    """buffer_push_alpha=None returns all indices unchanged."""
+    cfg = EDERConfig(buffer_push_alpha=None)
+    actor = ESActor(cfg, torch.device("cpu"))
+    results = [_make_result(f, n) for f, n in [(10, 0.1), (5, 0.9), (1, 0.5)]]
+    rank_weights = _rank_normalize(np.array([r.fitness for r in results]))
+    selected = actor._select_workers_to_push(results, rank_weights)
+    assert selected == [0, 1, 2]
+
+
+def test_select_workers_top_k_filters():
+    """With top_k=2 and alpha=1.0 (fitness only), only top-2 fitness workers + floor pass."""
+    # Workers: high-fitness, mid-fitness, low-fitness/high-novelty, low-fitness/low-novelty
+    results = [
+        _make_result(fitness=100.0, mean_novelty=0.1),  # 0: high fitness, low novelty
+        _make_result(fitness=80.0, mean_novelty=0.2),  # 1: mid fitness, low novelty
+        _make_result(fitness=10.0, mean_novelty=0.95),  # 2: low fitness, HIGH novelty → floor
+        _make_result(fitness=5.0, mean_novelty=0.05),  # 3: low fitness, low novelty → excluded
+    ]
+    cfg = EDERConfig(buffer_push_alpha=1.0, buffer_push_top_k=2, buffer_novelty_floor=0.25)
+    actor = ESActor(cfg, torch.device("cpu"))
+    rank_weights = _rank_normalize(np.array([r.fitness for r in results]))
+    selected = actor._select_workers_to_push(results, rank_weights)
+
+    # Top-2 by fitness: workers 0 and 1
+    assert 0 in selected
+    assert 1 in selected
+    # High-novelty worker passes via floor (top 25% = 1 worker by novelty = worker 2)
+    assert 2 in selected
+    # Low-fitness/low-novelty worker is excluded
+    assert 3 not in selected
+
+
+def test_select_workers_novelty_floor_overrides_combined():
+    """A worker with the highest novelty but lowest fitness passes via the floor,
+    even when alpha=1.0 (pure fitness gate) and top_k excludes it by score."""
+    results = [
+        _make_result(fitness=100.0, mean_novelty=0.01),  # 0: best fitness, worst novelty
+        _make_result(fitness=90.0, mean_novelty=0.02),  # 1: good fitness, low novelty
+        _make_result(fitness=1.0, mean_novelty=0.99),  # 2: worst fitness, best novelty → floor
+    ]
+    cfg = EDERConfig(buffer_push_alpha=1.0, buffer_push_top_k=2, buffer_novelty_floor=0.33)
+    actor = ESActor(cfg, torch.device("cpu"))
+    rank_weights = _rank_normalize(np.array([r.fitness for r in results]))
+    selected = actor._select_workers_to_push(results, rank_weights)
+
+    assert 2 in selected  # floor override: top novelty always enters
+
+
+def test_select_workers_balanced_alpha():
+    """With alpha=0.5, a high-novelty/low-fitness worker can outscore a low-novelty/mid-fitness one."""
+    results = [
+        _make_result(fitness=50.0, mean_novelty=0.9),  # 0: mid fitness, high novelty
+        _make_result(fitness=80.0, mean_novelty=0.1),  # 1: high fitness, low novelty
+        _make_result(fitness=5.0, mean_novelty=0.05),  # 2: low fitness, low novelty → excluded
+    ]
+    cfg = EDERConfig(buffer_push_alpha=0.5, buffer_push_top_k=2, buffer_novelty_floor=0.0)
+    actor = ESActor(cfg, torch.device("cpu"))
+    rank_weights = _rank_normalize(np.array([r.fitness for r in results]))
+    selected = actor._select_workers_to_push(results, rank_weights)
+
+    # Worker 0 (high novelty) and 1 (high fitness) should both be in top-2 combined
+    assert 0 in selected
+    assert 1 in selected
+    assert 2 not in selected

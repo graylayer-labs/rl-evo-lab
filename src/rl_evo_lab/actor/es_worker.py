@@ -21,6 +21,8 @@ class WorkerResult:
     # Each tuple: (obs, action, reward_extrinsic, next_obs, done)
     embeddings: list[np.ndarray] = field(default_factory=list)
     # Cached IDN embeddings — reused by ESActor for global buffer update (avoids recompute)
+    mean_novelty: float = 0.0
+    # Mean per-step intrinsic reward for this episode — used by selective push filter
 
 
 def run_worker_episode(
@@ -63,6 +65,7 @@ def run_worker_episode(
     extrinsic_return = 0.0
     transitions: list[tuple] = []
     embeddings: list[np.ndarray] = []
+    intrinsic_rewards: list[float] = []
 
     while not done:
         obs_t = torch.from_numpy(np.array(obs, dtype=np.float32)).unsqueeze(0)
@@ -80,14 +83,17 @@ def run_worker_episode(
             embeddings.append(embedding)  # cache for global buffer update
             if effective_beta > 0.0:
                 episodic_score = novelty.score(embedding)
-                global_score = global_novelty.query(embedding) if global_novelty is not None else 0.0
+                global_score = (
+                    global_novelty.query(embedding) if global_novelty is not None else 0.0
+                )
                 intrinsic_reward = episodic_score + global_score
             else:
-                novelty.add(embedding)   # keep episodic memory warm during warmup
+                novelty.add(embedding)  # keep episodic memory warm during warmup
                 intrinsic_reward = 0.0
         else:
             intrinsic_reward = 0.0
 
+        intrinsic_rewards.append(intrinsic_reward)
         augmented_reward = float(reward) + effective_beta * intrinsic_reward
         fitness += augmented_reward
         extrinsic_return += float(reward)
@@ -96,6 +102,8 @@ def run_worker_episode(
 
         obs = next_obs
 
+    mean_novelty = float(np.mean(intrinsic_rewards)) if intrinsic_rewards else 0.0
+
     return WorkerResult(
         noise_vector=noise_vector,
         noise_sign=noise_sign,
@@ -103,4 +111,5 @@ def run_worker_episode(
         extrinsic_return=extrinsic_return,
         transitions=transitions,
         embeddings=embeddings,
+        mean_novelty=mean_novelty,
     )

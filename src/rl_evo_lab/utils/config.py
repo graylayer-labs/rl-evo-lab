@@ -10,7 +10,7 @@ class EDERConfig:
     act_dim: int = 2
 
     # ES Actor
-    use_es: bool = True               # False = pure DQN with ε-greedy, no ES population
+    use_es: bool = True  # False = pure DQN with ε-greedy, no ES population
     es_sigma: float = 0.06
     es_n_workers: int = 50
     es_lr: float = 0.01
@@ -18,7 +18,7 @@ class EDERConfig:
     es_antithetic: bool = True
     sync_freq: int = 25
     sync_eval_threshold: float = 0.7  # only sync if learner_eval >= threshold * mean_actor_ext
-    use_novelty: bool = True          # False = ES+DQN baseline, no intrinsic reward
+    use_novelty: bool = True  # False = ES+DQN baseline, no intrinsic reward
 
     # DQN Learner
     hidden_dim: int = 128
@@ -53,22 +53,37 @@ class EDERConfig:
     # Convergence decay: as learner_eval crosses novelty_decay_start_reward → solved_reward,
     # a shared progress signal [0, 1] drives beta, sigma, and n_workers all toward their
     # minimum values. This prevents the ES population from destabilising a solved learner.
-    solved_reward: float = 475.0           # environment's "solved" reward threshold
-    novelty_solve_decay: bool = True       # enable convergence decay for beta/sigma/workers
+    solved_reward: float = 475.0  # environment's "solved" reward threshold
+    novelty_solve_decay: bool = True  # enable convergence decay for beta/sigma/workers
     novelty_decay_start_reward: float = 400.0  # learner eval at which decay begins
-    es_sigma_min: float = 0.005           # sigma floor when fully converged (finer exploration)
-    es_workers_min: int = 4               # worker count floor when fully converged
+    es_sigma_min: float = 0.005  # sigma floor when fully converged (finer exploration)
+    es_workers_min: int = 4  # worker count floor when fully converged
 
     # Training
-    total_episodes: int = 500           # hard ceiling — early stopping usually ends runs sooner
+    total_episodes: int = 500  # hard ceiling — early stopping usually ends runs sooner
     learner_updates_per_episode: int = 20
     min_buffer_size: int = 1_000
 
     # Early stopping — prevents wasted compute after solving or stagnating.
     # Checked at every eval_freq episode. Both conditions are evaluated independently.
-    early_stop_solved_window: int = 5   # stop after this many consecutive evals >= solved_reward
-    early_stop_patience: int = 30       # stop if best eval doesn't improve by min_delta for this many evals
-    early_stop_min_delta: float = 2.0   # minimum reward improvement to reset the patience counter
+    early_stop_solved_window: int = 5  # stop after this many consecutive evals >= solved_reward
+    early_stop_patience: int = (
+        30  # stop if best eval doesn't improve by min_delta for this many evals
+    )
+    early_stop_min_delta: float = 2.0  # minimum reward improvement to reset the patience counter
+
+    # Buffer push filtering — selectively gate which worker episodes enter the buffer.
+    # None = push everything (backward compatible default).
+    buffer_push_alpha: float | None = None
+    # alpha=0.5: equal weight fitness+novelty. alpha=1.0: fitness only. alpha=0.0: novelty only.
+
+    buffer_push_top_k: int | None = None
+    # Push only top-K workers by combined score. None = push all that pass the floor.
+    # Recommended: set to ~60-70% of es_n_workers (e.g. 4 out of 6 for cartpole).
+
+    buffer_novelty_floor: float = 0.2
+    # Top fraction of workers by raw novelty always enter buffer regardless of combined score.
+    # Ensures genuine exploration of new state regions is never filtered out.
 
     # Eval / logging
     seed: int = 42
@@ -85,7 +100,9 @@ class EDERConfig:
 ENV_PRESETS: dict[str, dict[str, Any]] = {
     # CartPole-v1 — solved at 475. Short episodes (~200 steps), fast to fill buffer.
     "cartpole": {
-        "env_id": "CartPole-v1", "obs_dim": 4, "act_dim": 2,
+        "env_id": "CartPole-v1",
+        "obs_dim": 4,
+        "act_dim": 2,
         "total_episodes": 2000,
         "buffer_capacity": 50_000,
         "min_buffer_size": 500,
@@ -99,7 +116,9 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
     # Larger network (256) and conservative lr (5e-4) for harder dynamics.
     # Longer novelty warmup/ramp: IDN needs more data before embeddings are reliable.
     "lunarlander": {
-        "env_id": "LunarLander-v3", "obs_dim": 8, "act_dim": 4,
+        "env_id": "LunarLander-v3",
+        "obs_dim": 8,
+        "act_dim": 4,
         "total_episodes": 3000,
         "buffer_capacity": 100_000,
         "min_buffer_size": 5_000,
@@ -120,7 +139,9 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
     },
     # Acrobot-v1 — solved at -100. Medium episodes (~200-500 steps).
     "acrobot": {
-        "env_id": "Acrobot-v1", "obs_dim": 6, "act_dim": 3,
+        "env_id": "Acrobot-v1",
+        "obs_dim": 6,
+        "act_dim": 3,
         "total_episodes": 1000,
         "buffer_capacity": 50_000,
         "min_buffer_size": 1_000,
@@ -133,13 +154,15 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
     # almost never manages this unaided. EDER's novelty drives population to explore
     # (position, velocity) space, eventually discovering the swing strategy.
     "mountaincar": {
-        "env_id": "MountainCar-v0", "obs_dim": 2, "act_dim": 3,
-        "total_episodes": 1000,      # ceiling; early stopping usually triggers first
-        "buffer_capacity": 30_000,   # episodes are max 200 steps; 30k is plenty
+        "env_id": "MountainCar-v0",
+        "obs_dim": 2,
+        "act_dim": 3,
+        "total_episodes": 1000,  # ceiling; early stopping usually triggers first
+        "buffer_capacity": 30_000,  # episodes are max 200 steps; 30k is plenty
         "min_buffer_size": 1_000,
-        "es_n_workers": 10,          # 5 antithetic pairs — more than cartpole, task needs exploration
+        "es_n_workers": 10,  # 5 antithetic pairs — more than cartpole, task needs exploration
         "epsilon_decay_episodes": 300,
-        "beta": 0.05,                # higher novelty weight for sparse-signal env
+        "beta": 0.05,  # higher novelty weight for sparse-signal env
         "novelty_warmup_episodes": 50,
         "novelty_ramp_episodes": 75,
         "solved_reward": -110.0,

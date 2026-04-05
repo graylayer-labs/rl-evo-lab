@@ -7,11 +7,11 @@ import torch
 
 
 class Transition(NamedTuple):
-    obs: torch.Tensor        # (batch, obs_dim)
-    action: torch.Tensor     # (batch,) long
-    reward: torch.Tensor     # (batch,)
-    next_obs: torch.Tensor   # (batch, obs_dim)
-    done: torch.Tensor       # (batch,) float
+    obs: torch.Tensor  # (batch, obs_dim)
+    action: torch.Tensor  # (batch,) long
+    reward: torch.Tensor  # (batch,)
+    next_obs: torch.Tensor  # (batch, obs_dim)
+    done: torch.Tensor  # (batch,) float
 
 
 class ReplayBuffer:

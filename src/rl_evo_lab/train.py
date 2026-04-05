@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from multiprocessing import Queue
+from pathlib import Path
 
 import gymnasium as gym
 import torch
@@ -10,8 +11,6 @@ from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
 from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
 from rl_evo_lab.learner.dqn import DQNLearner
 from rl_evo_lab.utils.config import EDERConfig
-from pathlib import Path
-
 from rl_evo_lab.utils.logging import EpisodeLog, RunLogger
 from rl_evo_lab.utils.seeding import seed_everything
 
@@ -30,7 +29,9 @@ def train(
     learner = DQNLearner(cfg, device)
     idn = InverseDynamicsNetwork(cfg, device) if cfg.use_es else None
     actor = ESActor(cfg, device) if cfg.use_es else None
-    logger = RunLogger(cfg, log_dir=log_dir, verbose=verbose, progress_queue=progress_queue, run_dir=run_dir)
+    logger = RunLogger(
+        cfg, log_dir=log_dir, verbose=verbose, progress_queue=progress_queue, run_dir=run_dir
+    )
 
     env_fn = lambda: gym.make(cfg.env_id)
     collect_env = gym.make(cfg.env_id)  # used by DQN collect_episode when use_es=False
@@ -41,9 +42,9 @@ def train(
     cumulative_env_steps = 0
 
     # Early stopping state
-    _solved_streak = 0          # consecutive eval windows at or above solved_reward
+    _solved_streak = 0  # consecutive eval windows at or above solved_reward
     _best_eval = -float("inf")  # best eval seen so far
-    _stale_count = 0            # consecutive eval windows without meaningful improvement
+    _stale_count = 0  # consecutive eval windows without meaningful improvement
 
     for episode in range(cfg.total_episodes):
         eval_reward = None
@@ -102,19 +103,21 @@ def train(
                 actor.sync_from_learner(learner.get_weights())
                 did_sync = True
 
-        logger.log(EpisodeLog(
-            episode=episode,
-            total_env_steps=cumulative_env_steps,
-            actor_augmented_reward=mean_augmented_fitness,
-            actor_extrinsic_reward=mean_extrinsic_return,
-            learner_loss=last_loss,
-            learner_eval_reward=eval_reward,
-            buffer_diversity=diversity,
-            idn_loss=idn_loss,
-            effective_beta=effective_beta,
-            buffer_size=len(buffer),
-            sync=did_sync,
-        ))
+        logger.log(
+            EpisodeLog(
+                episode=episode,
+                total_env_steps=cumulative_env_steps,
+                actor_augmented_reward=mean_augmented_fitness,
+                actor_extrinsic_reward=mean_extrinsic_return,
+                learner_loss=last_loss,
+                learner_eval_reward=eval_reward,
+                buffer_diversity=diversity,
+                idn_loss=idn_loss,
+                effective_beta=effective_beta,
+                buffer_size=len(buffer),
+                sync=did_sync,
+            )
+        )
 
         # Check early stopping after logging so the final episode is always in the CSV
         if episode % cfg.eval_freq == 0:

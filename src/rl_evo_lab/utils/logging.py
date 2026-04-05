@@ -15,7 +15,11 @@ from rl_evo_lab.utils.config import EDERConfig
 
 def _run_hash(cfg: EDERConfig) -> str:
     """6-char HP fingerprint. Same config → same hash. Used as dir suffix for safety."""
-    hp = {f.name: getattr(cfg, f.name) for f in fields(cfg) if f.name not in ("use_wandb", "wandb_project")}
+    hp = {
+        f.name: getattr(cfg, f.name)
+        for f in fields(cfg)
+        if f.name not in ("use_wandb", "wandb_project")
+    }
     return hashlib.sha1(json.dumps(hp, sort_keys=True).encode()).hexdigest()[:6]
 
 
@@ -29,7 +33,7 @@ def _run_dir(cfg: EDERConfig, results_dir: str | Path = "runs") -> Path:
 @dataclass
 class EpisodeLog:
     episode: int
-    total_env_steps: int       # cumulative env steps across all workers/episodes so far
+    total_env_steps: int  # cumulative env steps across all workers/episodes so far
     actor_augmented_reward: float
     actor_extrinsic_reward: float
     learner_loss: float
@@ -97,6 +101,7 @@ class RunLogger:
     def _init_wandb(self):
         try:
             import wandb
+
             return wandb.init(
                 project=self.cfg.wandb_project,
                 name=self.run_id,
@@ -122,6 +127,7 @@ class RunLogger:
         # wandb
         if self._wandb is not None:
             import wandb
+
             payload = {k: v for k, v in row.items() if v is not None and k != "episode"}
             wandb.log(payload, step=entry.episode)
 

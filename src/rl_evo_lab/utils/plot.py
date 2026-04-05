@@ -4,6 +4,7 @@ Usage:
     poetry run python -m rl_evo_lab.utils.plot runs/<run_id>/metrics.csv
     poetry run python -m rl_evo_lab.utils.plot runs/<run_id>/metrics.csv --show
 """
+
 from __future__ import annotations
 
 import argparse

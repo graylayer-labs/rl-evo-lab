@@ -15,9 +15,9 @@ Or from Python (e.g. a notebook)::
     experiment.run_one("EDER", seed=42)           # one condition, one seed
     experiment.plot(show=True)                    # re-plot without re-training
 """
+
 from __future__ import annotations
 
-import hashlib
 import json
 import multiprocessing
 import queue
@@ -45,6 +45,7 @@ _RUNS_DIR = "runs"
 # Condition
 # ---------------------------------------------------------------------------
 
+
 class Condition:
     """A labelled set of config overrides defining one experimental condition.
 
@@ -69,6 +70,7 @@ class Condition:
 # Status helpers  (inspired by rl-core RunManager)
 # ---------------------------------------------------------------------------
 
+
 def _is_done(run_dir: Path) -> bool:
     """Return True if this run completed successfully.
 
@@ -85,6 +87,7 @@ def _is_done(run_dir: Path) -> bool:
 # Picklable train worker (must be module-level for ProcessPoolExecutor)
 # ---------------------------------------------------------------------------
 
+
 def _train_worker(args: tuple) -> tuple[str, Path]:
     cfg, run_dir, q = args
     if not _is_done(run_dir):
@@ -95,6 +98,7 @@ def _train_worker(args: tuple) -> tuple[str, Path]:
 # ---------------------------------------------------------------------------
 # Experiment
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Experiment:
@@ -149,8 +153,7 @@ class Experiment:
 
         for i, cond in enumerate(self.conditions, 1):
             pending_seeds = [
-                s for s in self.seeds
-                if not _is_done(self._exp_run_dir(cond, s, results_dir))
+                s for s in self.seeds if not _is_done(self._exp_run_dir(cond, s, results_dir))
             ]
 
             _console.rule(f"[bold]{cond.label}[/bold]  ({i}/{len(self.conditions)})")
@@ -210,11 +213,12 @@ class Experiment:
         Flags: --force, --show, --workers N, --x-axis episode|env_steps, --plot-only
         """
         import argparse
+
         p = argparse.ArgumentParser(description=f"Run experiment: {self.name} on {self.env}")
-        p.add_argument("--force",     action="store_true", help="Delete and re-run existing results")
-        p.add_argument("--show",      action="store_true", help="Open the plot after saving")
-        p.add_argument("--workers",   type=int, default=None, help="Max parallel processes")
-        p.add_argument("--x-axis",    choices=["episode", "env_steps"], default="episode")
+        p.add_argument("--force", action="store_true", help="Delete and re-run existing results")
+        p.add_argument("--show", action="store_true", help="Open the plot after saving")
+        p.add_argument("--workers", type=int, default=None, help="Max parallel processes")
+        p.add_argument("--x-axis", choices=["episode", "env_steps"], default="episode")
         p.add_argument("--plot-only", action="store_true", help="Re-plot without re-training")
         args = p.parse_args()
 
@@ -237,7 +241,9 @@ class Experiment:
         for c in self.conditions:
             if c.label == label:
                 return c
-        raise ValueError(f"Unknown condition {label!r}. Available: {[c.label for c in self.conditions]}")
+        raise ValueError(
+            f"Unknown condition {label!r}. Available: {[c.label for c in self.conditions]}"
+        )
 
     def _exp_run_dir(self, cond: Condition, seed: int, results_dir: str = _RUNS_DIR) -> Path:
         """Experiment-scoped run dir: {results_dir}/{exp_name}/{label}__seed{N}__{hash}/"""
@@ -247,8 +253,7 @@ class Experiment:
     def _paths(self, results_dir: str = _RUNS_DIR) -> dict[str, list[Path]]:
         return {
             cond.label: [
-                self._exp_run_dir(cond, s, results_dir) / "metrics.csv"
-                for s in self.seeds
+                self._exp_run_dir(cond, s, results_dir) / "metrics.csv" for s in self.seeds
             ]
             for cond in self.conditions
         }
@@ -287,9 +292,7 @@ class Experiment:
         )
         # Key by run dir name (e.g. "EDER__seed42__4a3b2c") — matches RunLogger.run_id
         task_ids = {
-            run_dir.name: progress.add_task(
-                f"seed={cfg.seed}", total=cfg.total_episodes, stats=""
-            )
+            run_dir.name: progress.add_task(f"seed={cfg.seed}", total=cfg.total_episodes, stats="")
             for cfg, run_dir in jobs
         }
 
@@ -312,7 +315,9 @@ class Experiment:
                         parts.append(f"[green]eval={msg['eval']:.1f}[/green]")
                     if msg.get("sync"):
                         parts.append("[yellow]sync[/yellow]")
-                    progress.update(task_ids[rid], completed=msg["episode"] + 1, stats="  ".join(parts))
+                    progress.update(
+                        task_ids[rid], completed=msg["episode"] + 1, stats="  ".join(parts)
+                    )
                 except queue.Empty:
                     continue
 
@@ -322,7 +327,10 @@ class Experiment:
         with Live(progress, refresh_per_second=10, console=_console):
             listener.start()
             with ProcessPoolExecutor(max_workers=n_workers) as pool:
-                futures = {pool.submit(_train_worker, (cfg, run_dir, q)): (cfg, run_dir) for cfg, run_dir in jobs}
+                futures = {
+                    pool.submit(_train_worker, (cfg, run_dir, q)): (cfg, run_dir)
+                    for cfg, run_dir in jobs
+                }
                 for future in as_completed(futures):
                     cfg, run_dir = futures[future]
                     name, _ = future.result()

@@ -22,7 +22,9 @@ class InverseDynamicsNetwork(nn.Module):
         self.to(device)
         self.optimizer = optim.Adam(self.parameters(), lr=cfg.idn_lr)
 
-    def forward(self, obs: torch.Tensor, next_obs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, obs: torch.Tensor, next_obs: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         x = torch.cat([obs, next_obs], dim=-1)
         embedding = self.encoder(x)
         logits = self.head(embedding)

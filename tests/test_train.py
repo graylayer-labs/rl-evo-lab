@@ -1,6 +1,7 @@
 from pathlib import Path
-from rl_evo_lab.utils.config import EDERConfig
+
 from rl_evo_lab.train import train
+from rl_evo_lab.utils.config import EDERConfig
 
 
 def test_short_run(tmp_path: Path):
