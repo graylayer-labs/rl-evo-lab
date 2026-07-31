@@ -112,6 +112,26 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "solved_reward": 475.0,
         "novelty_decay_start_reward": 400.0,
     },
+    # CartPole-Tough: random starting position/angle + stricter termination (12° vs 24°) + 1000 step limit
+    "cartpole_tough": {
+        "env_id": "CartPole-v1",
+        "obs_dim": 4,
+        "act_dim": 2,
+        "total_episodes": 2000,
+        "buffer_capacity": 50_000,
+        "min_buffer_size": 500,
+        "es_n_workers": 6,
+        "target_update_freq": 100,
+        "epsilon_decay_episodes": 200,
+        "solved_reward": 10000.0,  # high threshold so only full 1000-step episodes count
+        "novelty_decay_start_reward": 8000.0,
+        # Custom flags for tough variant (applied in train.py)
+        "_tough": True,
+        "_cartpole_angle_limit": 0.209,  # 12° in radians
+        "_cartpole_position_limit": 2.0,  # tighter than default 2.4
+        "_episode_limit": 1000,
+        "_random_start": True,
+    },
     # LunarLander-v3 — solved at 200. Longer episodes (~400 steps), sparse early signal.
     # Larger network (256) and conservative lr (5e-4) for harder dynamics.
     # Longer novelty warmup/ramp: IDN needs more data before embeddings are reliable.
@@ -136,6 +156,34 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "novelty_ramp_episodes": 200,
         "solved_reward": 200.0,
         "novelty_decay_start_reward": 150.0,
+    },
+    # LunarLander-Tough: random starting position/velocity + tight landing zone (±0.1 pad center) + 2000 step limit
+    "lunarlander_tough": {
+        "env_id": "LunarLander-v3",
+        "obs_dim": 8,
+        "act_dim": 4,
+        "total_episodes": 3000,
+        "buffer_capacity": 100_000,
+        "min_buffer_size": 5_000,
+        "es_n_workers": 10,
+        "eval_freq": 25,
+        "sync_freq": 50,
+        "learner_updates_per_episode": 50,
+        "epsilon_decay_episodes": 800,
+        "target_update_freq": 200,
+        "hidden_dim": 256,
+        "dqn_lr": 5e-4,
+        "batch_size": 128,
+        "embed_dim": 128,
+        "novelty_warmup_episodes": 100,
+        "novelty_ramp_episodes": 200,
+        "solved_reward": 250.0,  # higher for tight landing requirement
+        "novelty_decay_start_reward": 200.0,
+        # Custom flags for tough variant (applied in train.py)
+        "_tough": True,
+        "_random_start_every_episode": True,
+        "_landing_zone_radius": 0.1,  # ±0.1 of pad center
+        "_episode_limit": 2000,
     },
     # Acrobot-v1 — solved at -100. Medium episodes (~200-500 steps).
     "acrobot": {
