@@ -8,6 +8,7 @@ import torch
 
 from rl_evo_lab.actor.es_actor import ESActor
 from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
+from rl_evo_lab.envs import make_env_with_config
 from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
 from rl_evo_lab.learner.dqn import DQNLearner
 from rl_evo_lab.utils.config import EDERConfig
@@ -33,9 +34,9 @@ def train(
         cfg, log_dir=log_dir, verbose=verbose, progress_queue=progress_queue, run_dir=run_dir
     )
 
-    env_fn = lambda: gym.make(cfg.env_id)
-    collect_env = gym.make(cfg.env_id)  # used by DQN collect_episode when use_es=False
-    eval_env = gym.make(cfg.env_id)
+    env_fn = lambda: make_env_with_config(cfg.env_id, cfg)
+    collect_env = make_env_with_config(cfg.env_id, cfg)  # used by DQN collect_episode when use_es=False
+    eval_env = make_env_with_config(cfg.env_id, cfg)
 
     last_loss = 0.0
     last_eval = 0.0
