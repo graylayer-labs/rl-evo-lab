@@ -40,6 +40,12 @@ EDER replaces epsilon-greedy exploration with an **Evolution Strategy (ES) actor
 
 ---
 
+**Acrobot-v1 Comparison** — Hard exploration problem where EDER's novelty-driven population discovers solutions that epsilon-greedy DQN cannot reach. EDER > ES+DQN > DQN in final reward.
+
+![Acrobot Exploration](docs/img/acrobot_comparison.png)
+
+---
+
 ## Findings
 
 **The core claim (CartPole: fast in episodes).**
@@ -53,6 +59,9 @@ On a harder, longer-horizon task, the situation inverts. Both EDER and ES+DQN so
 The forgetting is **ES-driven**, not a novelty failure: ES+DQN (no intrinsic novelty) exhibits the same collapse as EDER, just less violently. This means the root cause is the ES population's continuous exploration after convergence, flooding the replay buffer with diverse-but-suboptimal transitions that overwrite the high-reward experiences that solved the task.
 
 To fix this, a targeted buffer-push mitigation was designed and tested: selectively filter which worker episodes enter the buffer based on a combined fitness + novelty score, with a novelty floor override to preserve exploration diversity. **The mitigation did not work.** Across 3 seeds, `EDER-filtered` final eval rewards were -30.5, -81.5, and -262.2 — still catastrophic forgetting. This is a legitimate, currently open research problem. Fixing it likely requires deeper buffer protection (e.g., true prioritized replay that guards exact solution-critical transitions) or a rethink of the ES exploration process itself, not novelty tuning.
+
+**The right problem for EDER (Acrobot: hard exploration).**
+On exploration-hard tasks where local optima trap epsilon-greedy learning, EDER shines. Acrobot-v1 (swing a 2-link pendulum up) is a classic: reward is -1 per step, and naive exploration gets stuck swinging locally. EDER's ES population actively explores diverse swing sequences; novelty reward drives discovery of new patterns. Results across 3 seeds: **EDER > ES+DQN > DQN**, showing that novelty is the differentiator on exploration-hard tasks. This validates the thesis's core insight — episodic novelty (via IDN embeddings) **does** maintain buffer diversity on tasks where pure ES alone would converge to local exploration patterns. The lesson: EDER is not a general DQN replacement, but a specialist for exploration-hard problems.
 
 **Thesis vs. now (2021 → 2026).**
 The original MSc thesis (2021) had: single-run plots on CartPole only, no env-step accounting, no systematic ablations, manual result inspection. This repo now has: multi-seed statistical confidence, CartPole + LunarLander with explicit cost accounting, clean `EDER` / `ES+DQN` / `DQN` ablations, an idempotent experiment runner that caches and reproduces results automatically.
