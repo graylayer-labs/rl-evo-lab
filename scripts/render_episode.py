@@ -33,13 +33,11 @@ def render_episode(run_dir: str, output_path: str | None = None, fps: int = 30) 
     with open(config_path) as f:
         config_dict = json.load(f)
 
-    cfg = make_config(
-        env=config_dict.get("env_id", "CartPole-v1").lower().split("-")[0],
-        seed=config_dict.get("seed", 42),
-    )
-    for key, value in config_dict.items():
-        if hasattr(cfg, key):
-            setattr(cfg, key, value)
+    env_id = config_dict.get("env_id", "CartPole-v1")
+    env_name = env_id.lower().split("-")[0]
+    seed = config_dict.get("seed", 42)
+
+    cfg = make_config(env=env_name, seed=seed)
 
     device = torch.device("cpu")
     policy_net = QNetwork(cfg.obs_dim, cfg.act_dim, hidden=cfg.hidden_dim).to(device)

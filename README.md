@@ -20,7 +20,17 @@ EDER replaces epsilon-greedy exploration with an **Evolution Strategy (ES) actor
 
 ## Results at a Glance
 
+**CartPole-v1 Comparison** — ES-driven variants (EDER, ES+DQN) solve in ~330 episodes; DQN does not solve in 500 episodes (insufficient budget).
+
 ![CartPole Efficiency](docs/img/cartpole_comparison.png)
+
+**Episode demonstration (EDER on CartPole, seed 7):**
+
+![CartPole Solved](docs/img/cartpole_solved.gif)
+
+---
+
+**LunarLander-v3 Comparison** — ES variants solve then catastrophically forget; DQN solves and holds (see Findings).
 
 ![LunarLander Efficiency](docs/img/lunarlander_comparison.png)
 
