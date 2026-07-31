@@ -28,7 +28,8 @@ class CartPoleToughWrapper(gym.Wrapper):
         state[0] = np.random.uniform(-0.5, 0.5)
         unwrapped_env.state = state
 
-        obs = unwrapped_env._get_obs()
+        # Return observation based on modified state
+        obs = np.array(state, dtype=np.float32)
         return obs, info
 
     def step(self, action):
@@ -60,7 +61,7 @@ class LunarLanderToughWrapper(gym.Wrapper):
 
         # Apply random starting state
         unwrapped_env = self.env.unwrapped
-        state = list(unwrapped_env.state) if hasattr(unwrapped_env, 'state') else obs[:8]
+        state = np.array(unwrapped_env.state, dtype=np.float32) if hasattr(unwrapped_env, 'state') else obs.copy()
         # Random position perturbation
         state[0] += np.random.uniform(-0.3, 0.3)  # x position
         state[1] += np.random.uniform(-0.1, 0.1)  # y position
@@ -70,8 +71,9 @@ class LunarLanderToughWrapper(gym.Wrapper):
 
         if hasattr(unwrapped_env, 'state'):
             unwrapped_env.state = state
-        obs = unwrapped_env._get_obs() if hasattr(unwrapped_env, '_get_obs') else obs
 
+        # Return the modified state as observation
+        obs = np.array(state, dtype=np.float32)
         return obs, info
 
     def step(self, action):
