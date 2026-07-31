@@ -34,6 +34,10 @@ EDER replaces epsilon-greedy exploration with an **Evolution Strategy (ES) actor
 
 ![LunarLander Efficiency](docs/img/lunarlander_comparison.png)
 
+**Episode demonstration (DQN on LunarLander, seed 123 — the baseline that holds its solution):**
+
+![LunarLander Solved](docs/img/lunarlander_solved.gif)
+
 ---
 
 ## Findings
