@@ -229,4 +229,12 @@ def make_config(env: str = "cartpole", **overrides: Any) -> EDERConfig:
     preset = ENV_PRESETS.get(env)
     if preset is None:
         raise ValueError(f"Unknown env preset {env!r}. Available: {list(ENV_PRESETS)}")
-    return EDERConfig(**{**preset, **overrides})
+    # Filter out custom flags (prefixed with _) that are used for environment wrappers, not EDERConfig
+    merged = {**preset, **overrides}
+    config_kwargs = {k: v for k, v in merged.items() if not k.startswith('_')}
+    cfg = EDERConfig(**config_kwargs)
+    # Attach custom flags to config for use by environment wrappers
+    for k, v in merged.items():
+        if k.startswith('_'):
+            object.__setattr__(cfg, k, v)
+    return cfg
