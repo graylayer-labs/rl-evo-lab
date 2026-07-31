@@ -14,6 +14,37 @@ EDER replaces epsilon-greedy exploration with an **Evolution Strategy (ES) actor
 - Reproducible experiment runner with multi-seed comparisons and cached reruns
 - Explicit ablations across `EDER`, `ES+DQN`, and pure `DQN`
 - Concrete engineering work beyond reproduction: replay-buffer filtering, config generation, result comparison tooling, and README automation
+- Honest narrative of what worked, what didn't, and what remains open — modernizing a 2021 MSc thesis with current standards
+
+---
+
+## Results at a Glance
+
+![CartPole Efficiency](docs/img/cartpole_comparison.png)
+
+![LunarLander Efficiency](docs/img/lunarlander_comparison.png)
+
+---
+
+## Findings
+
+**The core claim (CartPole: fast in episodes).**
+ES-driven exploration (EDER and ES+DQN) reaches a strong CartPole policy in far fewer episodes than epsilon-greedy DQN — typically by episode 331–368 vs never solving within a 500-episode budget for DQN. But this comes at a cost: ES consumes ~20× more environment steps because each training episode runs N worker rollouts in parallel. The real trade is clear: **population-based exploration vs single-trajectory sample efficiency**.
+
+This is the original thesis claim, reproduced here with stronger methodology: multi-seed runs (3 seeds) with confidence intervals rather than single-run plots, and explicit `total_env_steps` tracking to expose the true cost.
+
+**The unsolved problem (LunarLander: solves, then forgets).**
+On a harder, longer-horizon task, the situation inverts. Both EDER and ES+DQN solve LunarLander (threshold 200) — peaks of 235–262 across seeds — then catastrophically forget, ending at -20 to +80 (EDER) or 24–151 (ES+DQN). DQN, by contrast, solves and holds: peaks 242–263, ends 202–262.
+
+The forgetting is **ES-driven**, not a novelty failure: ES+DQN (no intrinsic novelty) exhibits the same collapse as EDER, just less violently. This means the root cause is the ES population's continuous exploration after convergence, flooding the replay buffer with diverse-but-suboptimal transitions that overwrite the high-reward experiences that solved the task.
+
+To fix this, a targeted buffer-push mitigation was designed and tested: selectively filter which worker episodes enter the buffer based on a combined fitness + novelty score, with a novelty floor override to preserve exploration diversity. **The mitigation did not work.** Across 3 seeds, `EDER-filtered` final eval rewards were -30.5, -81.5, and -262.2 — still catastrophic forgetting. This is a legitimate, currently open research problem. Fixing it likely requires deeper buffer protection (e.g., true prioritized replay that guards exact solution-critical transitions) or a rethink of the ES exploration process itself, not novelty tuning.
+
+**Thesis vs. now (2021 → 2026).**
+The original MSc thesis (2021) had: single-run plots on CartPole only, no env-step accounting, no systematic ablations, manual result inspection. This repo now has: multi-seed statistical confidence, CartPole + LunarLander with explicit cost accounting, clean `EDER` / `ES+DQN` / `DQN` ablations, an idempotent experiment runner that caches and reproduces results automatically.
+
+**What the field did meanwhile (2021–2025).**
+Episodic-novelty-style exploration (this project's inverse-dynamics + KNN approach) was independently validated by DeepMind's NGU (2020) and Agent57 (2021) — a strong external signal. The field moved from "ES fills a buffer for a learner" toward quality-diversity approaches like PGA-MAP-Elites (2021) and ERL-Re2 (2023), where the ES population maintains a behaviorally diverse *archive* and the learner improves each cell. That's the natural architectural next step, but it's a bigger change than this repo currently spans. In the meantime, immediate improvements exist: prioritized replay (PER) would directly attack the forgetting problem, and double DQN is a one-line learner improvement. See references for the papers.
 
 ---
 
@@ -276,18 +307,16 @@ This section is generated from `src/rl_evo_lab/utils/config.py`.
 
 ---
 
-## Results
+## Data & Reproducibility
 
-The stable source of truth for results is the generated output under `runs/`, especially:
+The source of truth for results is the generated output under `runs/`:
 
-- `runs/<experiment_name>/comparison.png`
-- `runs/<experiment_name>/manifest.json`
-- per-seed `metrics.csv` files inside each run directory
+- `runs/<experiment_name>/comparison.png` — comparison plot (mean ± std across seeds)
+- `runs/<experiment_name>/manifest.json` — experiment metadata and run registry
+- per-seed `metrics.csv` files — detailed learning curves and diagnostics for each run
+- per-seed `config.json` and `policy.pt` — experiment config and trained Q-network weights
 
-Qualitatively, the project is centered on two recurring observations:
-
-- On CartPole, the ES-driven variants learn much faster than pure DQN in episode terms.
-- On harder environments such as LunarLander, ES improves exploration but can destabilize the replay buffer after solving, which is why the buffer-push filtering path exists.
+Each experiment is fully reproducible: re-running the same script reruns only missing conditions and seeds; already-completed runs are skipped unless `--force` is passed.
 
 ---
 
@@ -322,9 +351,20 @@ tests/                # pytest suite
 
 ## References
 
+**Foundational (ES + RL hybrid approach)**
 - Khadka & Tumer (2018) — [ERL: Evolution-Guided Policy Gradient](https://arxiv.org/abs/1805.07917)
 - Salimans et al. (2017) — [ES as a Scalable Alternative to RL](https://arxiv.org/abs/1703.03864)
-- Badia et al. (2020) — [Never Give Up](https://arxiv.org/abs/2002.06038)
+- Lehman & Stanley (2011) — [Novelty Search](https://dl.acm.org/doi/10.1145/1830483.1830503)
+
+**Core RL algorithms**
 - Mnih et al. (2015) — [DQN](https://www.nature.com/articles/nature14236)
 - Lillicrap et al. (2015) — [DDPG](https://arxiv.org/abs/1509.02971)
-- Lehman & Stanley (2011) — [Novelty Search](https://dl.acm.org/doi/10.1145/1830483.1830503)
+
+**Intrinsic motivation & exploration (episodic + lifelong)**
+- Badia et al. (2020) — [Never Give Up (NGU)](https://arxiv.org/abs/2002.06038) — episodic KNN + RND lifelong; validates our IDN-KNN approach
+- Badia et al. (2020) — [Agent57](https://arxiv.org/abs/2003.13350) — population of policies with diverse exploration coefficients
+- Ecoffet et al. (2021) — [Go-Explore](https://arxiv.org/abs/2010.04286) — memory + return to promising states
+
+**Quality-Diversity (QD) + RL (next-generation hybrid)**
+- Nilsson & Cully (2021) — [PGA-MAP-Elites](https://arxiv.org/abs/2105.01016) — ES maintains behavioral archive, learner improves each cell
+- Tjanaka et al. (2023) — [ERL-Re2](https://arxiv.org/abs/2309.11842) — fixes catastrophic forgetting via behavior-level operators

@@ -74,7 +74,7 @@ Always seed everything and log σ and β per run.
 
 ## rl-core
 
-This repo does **not yet use rl-core** — it has its own implementations of replay buffer, DQN network, logging, and seeding. These are candidates for migration:
+This repo **uses rl-core** (v0.2.0, from eoin-james/rl-core) but maintains local implementations for buffer, network, logging, and seeding that are not yet migrated. These remain local by design or are pending migration:
 
 | Local impl | rl-core equivalent |
 |---|---|

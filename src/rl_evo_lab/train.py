@@ -130,6 +130,11 @@ def train(
     collect_env.close()
     eval_env.close()
 
+    if run_dir is not None:
+        policy_path = Path(run_dir) / "policy.pt"
+        learner.policy_net.cpu()
+        torch.save(learner.policy_net.state_dict(), policy_path)
+
 
 if __name__ == "__main__":
     train()
