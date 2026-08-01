@@ -26,15 +26,15 @@ This section summarizes the key findings across CartPole and LunarLander environ
 
 ## Findings
 
-### CartPole-v1: ES-driven exploration wins on sample efficiency (in episodes)
+### CartPole-v1: High variance makes the comparison messy
 
-**The win: EDER beats DQN decisively on sample efficiency.**
+**The finding: ES methods (EDER, ES+DQN) train noisier than DQN, with similar final performance on CartPole Normal.**
 
-On standard CartPole, EDER reaches a mean eval reward of **186.7** vs. DQN's **129.2** — a 44% improvement. Both fall short of the 475 solved threshold, but EDER converges to a stronger policy with higher variance, meaning the ES population explores broader state regions. Below is the normal CartPole comparison and a more challenging variant:
+On standard CartPole, all three methods reach similar final evaluation rewards (~150-200 range) with significant overlap. EDER mean: **186.7**, DQN mean: **129.2**, but the confidence intervals are large enough that the difference is not visually decisive. ES-based methods show higher variance, suggesting the population explores a broader state region (both good and bad trajectories enter the buffer). Below is the normal CartPole comparison and a more challenging variant:
 
 **CartPole Normal:**
 
-![CartPole comparison plot showing EDER, ES+DQN, and DQN training curves. EDER reaches mean reward 186.7 (highest), while DQN plateaus at 129.2.](docs/img/cartpole_comparison.png)
+![CartPole comparison plot showing EDER, ES+DQN, and DQN training curves across 3 seeds. All three methods converge to similar reward ranges by episode 450. High variance in ES methods (wide confidence bands) makes EDER's final lead non-obvious from the plot alone.](docs/img/cartpole_comparison.png)
 
 **CartPole Tough (harder variant with random start, stricter angle limit, 1000-step episodes):**
 
