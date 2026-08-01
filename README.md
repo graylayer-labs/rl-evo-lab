@@ -93,16 +93,16 @@ With tuned hyperparameters:
 
 The tuning improves ES methods substantially. EDER now beats ES+DQN by 9.6% — a meaningful gain but far less dramatic than the 87% advantage predicted by quick 100-episode diagnostics. This discrepancy is key: over 2000 episodes, ES instability compounds despite stronger novelty signal.
 
-**CartPole Tough (random start, stricter angle, 1000 steps):**
+**CartPole Tough (Tuned HPs: random start, stricter angle, 1000 steps):**
 
-![CartPole tough comparison showing DQN winning (240.3), while EDER trails (210.1).](docs/img/cartpole_tough_comparison.png)
+![CartPole Tough with tuned HPs: EDER 141.3 mean edges out ES+DQN 135.9 and DQN 134.4, but improvement margins collapse under robustness stress.](docs/img/cartpole_tough_comparison.png)
 
-Final eval rewards:
-- **DQN: 240.3** (wins)
-- EDER: 210.1
-- ES+DQN: 100.7
+With tuned hyperparameters:
+- **EDER: 141.3 mean** (seeds: 213.8, 101.5, 108.7)
+- **ES+DQN: 135.9 mean** (seeds: 193.7, 112.5, 101.5)
+- **DQN: 134.4 mean** (seeds: 105.7, 117.9, 179.6)
 
-When robustness demands are added (random starting state, stricter termination, longer episodes), **DQN decisively outperforms ES-based methods**. This is the critical finding: ES exploration is brittle to environmental variation.
+**Critical insight:** When environmental randomness increases, tuning benefits collapse. EDER's advantage shrinks from 9.6% on Normal to 4.0% on Tough. Across all three conditions, seed-level variability is high (ranges 100-213), suggesting tuned HPs improve ES exploration but cannot overcome fundamental brittleness under perturbation.
 
 ---
 

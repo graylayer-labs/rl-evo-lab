@@ -51,9 +51,17 @@ Initial experiments showed ES methods underperforming DQN. Investigation reveale
 **Result:** EDER 217.7 vs ES+DQN 198.5 = **9.6% improvement** (vs 87% in diagnostic sweeps)
 
 #### CartPole Tough (2000-episode validation with tuned HPs: β=0.1, σ=0.1, ramp=200)
-**Status:** ⏳ QUEUED (not yet started)
+**Status:** ✅ COMPLETED
 
-Expected: Tuned HPs should improve robustness performance vs baseline
+| Condition | seed7 | seed42 | seed123 | Mean | Notes |
+|---|---|---|---|---|---|
+| EDER | 213.8 | 101.5 | 108.7 | 141.3 | Slight seed7 peak (213.8), crashes on 42/123 |
+| ES+DQN | 193.7 | 112.5 | 101.5 | 135.9 | — |
+| DQN | 105.7 | 117.9 | 179.6 | 134.4 | — |
+
+**Result:** EDER 141.3 vs ES+DQN 135.9 = **4.0% improvement** (down from 9.6% on Normal)
+
+**Finding:** Robustness challenge (random start, stricter termination, 1000 steps) reduces ES tuning benefits. EDER's margin shrinks dramatically when environment randomness increases, suggesting the novelty-driven exploration, while improved, is still brittle under perturbation.
 
 ---
 
