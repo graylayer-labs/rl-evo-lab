@@ -27,7 +27,9 @@ class DQNLearner:
         batch = buffer.sample(self.cfg.batch_size, self.device)
 
         with torch.no_grad():
-            next_q = self.target_net(batch.next_obs).max(dim=1).values
+            # Double DQN: use policy_net to select action, target_net to evaluate
+            next_actions = self.policy_net(batch.next_obs).argmax(dim=1)
+            next_q = self.target_net(batch.next_obs).gather(1, next_actions.unsqueeze(1)).squeeze(1)
             target = batch.reward + self.cfg.gamma * next_q * (1.0 - batch.done)
 
         current_q = self.policy_net(batch.obs).gather(1, batch.action.unsqueeze(1)).squeeze(1)
