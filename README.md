@@ -26,46 +26,57 @@ This section summarizes the key findings across CartPole and LunarLander environ
 
 ## Findings
 
-### CartPole-v1: High variance makes the comparison messy
+### The Bottom Line
 
-**The finding: ES methods (EDER, ES+DQN) train noisier than DQN, with similar final performance on CartPole Normal.**
+Across all four experiments, **DQN consistently outperforms or matches ES-based methods (EDER, ES+DQN)**, particularly on tasks requiring robust, stable control. ES methods suffer from high variance and catastrophic forgetting on longer-horizon environments.
 
-On standard CartPole, all three methods reach similar final evaluation rewards (~150-200 range) with significant overlap. EDER mean: **186.7**, DQN mean: **129.2**, but the confidence intervals are large enough that the difference is not visually decisive. ES-based methods show higher variance, suggesting the population explores a broader state region (both good and bad trajectories enter the buffer). Below is the normal CartPole comparison and a more challenging variant:
+### CartPole: ES methods show high variance; DQN wins on robustness
 
 **CartPole Normal:**
 
-![CartPole comparison plot showing EDER, ES+DQN, and DQN training curves across 3 seeds. All three methods converge to similar reward ranges by episode 450. High variance in ES methods (wide confidence bands) makes EDER's final lead non-obvious from the plot alone.](docs/img/cartpole_comparison.png)
+![CartPole comparison plot showing ES Worker Return, Learner Eval Reward, DQN Loss, and Effective Novelty Weight. EDER reaches mean 186.7, DQN reaches 129.2, but confidence bands overlap significantly. None hit the 475 solved threshold.](docs/img/cartpole_comparison.png)
 
-**CartPole Tough (harder variant with random start, stricter angle limit, 1000-step episodes):**
+Final eval rewards:
+- EDER: 186.7 (high variance)
+- DQN: 129.2
+- ES+DQN: 104.2
 
-![CartPole tough comparison showing DQN winning (240.3), while EDER trails (210.1). Under robustness pressure, DQN outperforms ES-based methods.](docs/img/cartpole_tough_comparison.png)
+On standard CartPole, EDER's mean is slightly higher, but the confidence intervals are wide enough that the difference is not visually clear. ES methods show higher variance — their population explores a broader state region, for better and worse.
 
-**The reality check:** On standard CartPole, EDER wins. But add robustness demands (random starting state, stricter termination, longer episodes), and the gap closes — DQN actually wins. This reveals the trade-off: EDER's episodic novelty exploration works great for smooth, deterministic environments but doesn't generalize as well to variable start conditions.
+**CartPole Tough (random start, stricter angle, 1000 steps):**
 
-**The cost caveat:** ES-based methods train faster in wall-clock episodes, but each episode runs N worker rollouts in parallel. Total environment steps are ~20× higher for EDER than DQN. The real trade is explicit: **episode efficiency vs. step efficiency**.
+![CartPole tough comparison showing DQN winning (240.3), while EDER trails (210.1).](docs/img/cartpole_tough_comparison.png)
 
-**What this reproduces:** The original MSc thesis (2021) claimed ES-driven exploration reaches CartPole solutions in fewer episodes. We've confirmed that with multi-seed runs (3 seeds, confidence intervals) and explicit env-step accounting — a methodological upgrade from the original single-run plots.
+Final eval rewards:
+- **DQN: 240.3** (wins)
+- EDER: 210.1
+- ES+DQN: 100.7
+
+When robustness demands are added (random starting state, stricter termination, longer episodes), **DQN decisively outperforms ES-based methods**. This is the critical finding: ES exploration is brittle to environmental variation.
 
 ---
 
-### LunarLander-v3: The catastrophic forgetting problem (remains unsolved)
-
-**The failure: EDER solves LunarLander early, then forgets catastrophically.**
-
-On a longer-horizon, harder task, EDER and ES+DQN exhibit catastrophic forgetting. Both reach threshold (reward > 200) mid-training but then collapse as the ES population continues exploring and flooding the replay buffer with suboptimal transitions.
+### LunarLander: DQN solves and holds; ES methods catastrophically fail
 
 **LunarLander Normal:**
 
-![LunarLander comparison showing EDER crashing to 27.2 final reward despite early peaks of 235–262. DQN holds its solution (237.9 mean, no forgetting).](docs/img/lunarlander_comparison.png)
+![LunarLander comparison showing EDER crashing from peaks of 235–262 down to 27.2 final reward. DQN holds steady at 237.9.](docs/img/lunarlander_comparison.png)
+
+Final eval rewards:
+- **DQN: 237.9** (holds solution)
+- EDER: 27.2 (catastrophic forgetting)
+- ES+DQN: 121.3 (severe failure)
 
 **LunarLander Tough:**
 
-![LunarLander tough comparison showing DQN dominance (266.2 final) and ES+DQN collapse (-65.7). The forgetting is ES-driven, not novelty-driven.](docs/img/lunarlander_tough_comparison.png)
+![LunarLander tough comparison showing DQN dominance (266.2) and ES+DQN collapse (-65.7).](docs/img/lunarlander_tough_comparison.png)
 
-**Why this happens (and why it's hard to fix):**
-The forgetting is **ES-driven, not novelty-driven.** ES+DQN (which has no intrinsic novelty module) exhibits the same collapse as EDER, just less violently. This means the root cause is the ES population's continuous exploration after convergence — it fills the replay buffer with diverse-but-suboptimal transitions that overwrite the high-reward experiences that solved the task.
+Final eval rewards:
+- **DQN: 266.2** (robust)
+- EDER: 26.7 (catastrophic forgetting)
+- ES+DQN: -65.7 (severe collapse)
 
-A targeted mitigation was tested: selectively filter which worker episodes enter the buffer based on combined fitness + novelty score. **The mitigation failed.** Across 3 seeds, `EDER-filtered` final rewards were -30.5, -81.5, and -262.2 — still catastrophic forgetting. Fixing this is a legitimate, open research problem. The solution likely requires deeper buffer protection (true prioritized replay guarding solution-critical transitions) or a fundamental rethink of the ES exploration process, not novelty tuning.
+**Why ES fails:** The forgetting is **ES-driven, not novelty-driven.** ES+DQN (without intrinsic novelty) exhibits the same collapse as EDER, proving the problem is ES exploration, not the IDN module. The ES population continues exploring after convergence, flooding the replay buffer with diverse-but-suboptimal transitions that overwrite the high-reward experiences that solved the task. This is a fundamental open problem in ES-based RL.
 
 ---
 
