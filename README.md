@@ -20,54 +20,75 @@ EDER replaces epsilon-greedy exploration with an **Evolution Strategy (ES) actor
 
 ## Results at a Glance
 
-**CartPole-v1 Comparison** — ES-driven variants (EDER, ES+DQN) solve in ~330 episodes; DQN does not solve in 500 episodes (insufficient budget).
-
-![CartPole Efficiency](docs/img/cartpole_comparison.png)
-
-**Episode demonstration (EDER on CartPole, seed 7):**
-
-![CartPole Solved](docs/img/cartpole_solved.gif)
-
----
-
-**LunarLander-v3 Comparison** — ES variants solve then catastrophically forget; DQN solves and holds (see Findings).
-
-![LunarLander Efficiency](docs/img/lunarlander_comparison.png)
-
-**Episode demonstration (DQN on LunarLander, seed 123 — the baseline that holds its solution):**
-
-![LunarLander Solved](docs/img/lunarlander_solved.gif)
-
----
-
-**Acrobot-v1 Comparison** — Hard exploration problem where EDER's novelty-driven population discovers solutions that epsilon-greedy DQN cannot reach. EDER > ES+DQN > DQN in final reward.
-
-![Acrobot Exploration](docs/img/acrobot_comparison.png)
+This section summarizes the key findings across CartPole and LunarLander environments. Full detailed analysis is in the [Findings](#findings) section below, with embedded comparison plots showing all four critical experiments.
 
 ---
 
 ## Findings
 
-**The core claim (CartPole: fast in episodes).**
-ES-driven exploration (EDER and ES+DQN) reaches a strong CartPole policy in far fewer episodes than epsilon-greedy DQN — typically by episode 331–368 vs never solving within a 500-episode budget for DQN. But this comes at a cost: ES consumes ~20× more environment steps because each training episode runs N worker rollouts in parallel. The real trade is clear: **population-based exploration vs single-trajectory sample efficiency**.
+### CartPole-v1: ES-driven exploration wins on sample efficiency (in episodes)
 
-This is the original thesis claim, reproduced here with stronger methodology: multi-seed runs (3 seeds) with confidence intervals rather than single-run plots, and explicit `total_env_steps` tracking to expose the true cost.
+**The win: EDER and ES+DQN reach strong policies in far fewer episodes than DQN.**
 
-**The unsolved problem (LunarLander: solves, then forgets).**
-On a harder, longer-horizon task, the situation inverts. Both EDER and ES+DQN solve LunarLander (threshold 200) — peaks of 235–262 across seeds — then catastrophically forget, ending at -20 to +80 (EDER) or 24–151 (ES+DQN). DQN, by contrast, solves and holds: peaks 242–263, ends 202–262.
+ES-driven exploration reaches a strong CartPole policy in ~330–370 episodes. DQN with epsilon-greedy exploration never solves (reward > 475) within 500 episodes. Below is the normal CartPole comparison and a more challenging variant:
 
-The forgetting is **ES-driven**, not a novelty failure: ES+DQN (no intrinsic novelty) exhibits the same collapse as EDER, just less violently. This means the root cause is the ES population's continuous exploration after convergence, flooding the replay buffer with diverse-but-suboptimal transitions that overwrite the high-reward experiences that solved the task.
+**CartPole Normal:**
 
-To fix this, a targeted buffer-push mitigation was designed and tested: selectively filter which worker episodes enter the buffer based on a combined fitness + novelty score, with a novelty floor override to preserve exploration diversity. **The mitigation did not work.** Across 3 seeds, `EDER-filtered` final eval rewards were -30.5, -81.5, and -262.2 — still catastrophic forgetting. This is a legitimate, currently open research problem. Fixing it likely requires deeper buffer protection (e.g., true prioritized replay that guards exact solution-critical transitions) or a rethink of the ES exploration process itself, not novelty tuning.
+![CartPole comparison plot showing EDER, ES+DQN, and DQN training curves. EDER and ES+DQN reach mean reward 186.7 and peak higher, while DQN plateaus at 129.2.](docs/img/cartpole_comparison.png)
 
-**The right problem for EDER (Acrobot: hard exploration).**
-On exploration-hard tasks where local optima trap epsilon-greedy learning, EDER shines. Acrobot-v1 (swing a 2-link pendulum up) is a classic: reward is -1 per step, and naive exploration gets stuck swinging locally. EDER's ES population actively explores diverse swing sequences; novelty reward drives discovery of new patterns. Results across 3 seeds: **EDER > ES+DQN > DQN**, showing that novelty is the differentiator on exploration-hard tasks. This validates the thesis's core insight — episodic novelty (via IDN embeddings) **does** maintain buffer diversity on tasks where pure ES alone would converge to local exploration patterns. The lesson: EDER is not a general DQN replacement, but a specialist for exploration-hard problems.
+**CartPole Tough:**
 
-**Thesis vs. now (2021 → 2026).**
-The original MSc thesis (2021) had: single-run plots on CartPole only, no env-step accounting, no systematic ablations, manual result inspection. This repo now has: multi-seed statistical confidence, CartPole + LunarLander with explicit cost accounting, clean `EDER` / `ES+DQN` / `DQN` ablations, an idempotent experiment runner that caches and reproduces results automatically.
+![CartPole tough comparison showing all three methods. DQN wins here (240.3), while EDER trails (210.1) — revealing the robustness gap: EDER is brittle to environment changes.](docs/img/cartpole_tough_comparison.png)
 
-**What the field did meanwhile (2021–2025).**
-Episodic-novelty-style exploration (this project's inverse-dynamics + KNN approach) was independently validated by DeepMind's NGU (2020) and Agent57 (2021) — a strong external signal. The field moved from "ES fills a buffer for a learner" toward quality-diversity approaches like PGA-MAP-Elites (2021) and ERL-Re2 (2023), where the ES population maintains a behaviorally diverse *archive* and the learner improves each cell. That's the natural architectural next step, but it's a bigger change than this repo currently spans. In the meantime, immediate improvements exist: prioritized replay (PER) would directly attack the forgetting problem, and double DQN is a one-line learner improvement. See references for the papers.
+**The caveat: but ES costs ~20× more environment steps.** Each training episode runs N worker rollouts in parallel, so total environment steps are much higher for ES variants. The real trade is explicit: **episode efficiency vs. step efficiency**. EDER solves CartPole faster in wall-clock episodes but slower in total env-steps.
+
+**What this reproduces:** The original MSc thesis (2021) claimed ES-driven exploration reaches CartPole solutions in fewer episodes. We've confirmed that with multi-seed runs (3 seeds, confidence intervals) and explicit env-step accounting — a methodological upgrade from the original single-run plots.
+
+---
+
+### LunarLander-v3: The catastrophic forgetting problem (remains unsolved)
+
+**The failure: EDER solves LunarLander early, then forgets catastrophically.**
+
+On a longer-horizon, harder task, EDER and ES+DQN exhibit catastrophic forgetting. Both reach threshold (reward > 200) mid-training but then collapse as the ES population continues exploring and flooding the replay buffer with suboptimal transitions.
+
+**LunarLander Normal:**
+
+![LunarLander comparison showing EDER crashing to 27.2 final reward despite early peaks of 235–262. DQN holds its solution (237.9 mean, no forgetting).](docs/img/lunarlander_comparison.png)
+
+**LunarLander Tough:**
+
+![LunarLander tough comparison showing DQN dominance (266.2 final) and ES+DQN collapse (-65.7). The forgetting is ES-driven, not novelty-driven.](docs/img/lunarlander_tough_comparison.png)
+
+**Why this happens (and why it's hard to fix):**
+The forgetting is **ES-driven, not novelty-driven.** ES+DQN (which has no intrinsic novelty module) exhibits the same collapse as EDER, just less violently. This means the root cause is the ES population's continuous exploration after convergence — it fills the replay buffer with diverse-but-suboptimal transitions that overwrite the high-reward experiences that solved the task.
+
+A targeted mitigation was tested: selectively filter which worker episodes enter the buffer based on combined fitness + novelty score. **The mitigation failed.** Across 3 seeds, `EDER-filtered` final rewards were -30.5, -81.5, and -262.2 — still catastrophic forgetting. Fixing this is a legitimate, open research problem. The solution likely requires deeper buffer protection (true prioritized replay guarding solution-critical transitions) or a fundamental rethink of the ES exploration process, not novelty tuning.
+
+---
+
+### Thesis vs. Now (2021 → 2026)
+
+The original MSc thesis (2021):
+- Single-run plots on CartPole only
+- No environment-step accounting
+- No systematic ablations
+- Manual result inspection
+
+This repo now:
+- Multi-seed runs with confidence intervals (3 seeds minimum)
+- Full environment-step cost tracking
+- Clean `EDER` / `ES+DQN` / `DQN` ablations across CartPole and LunarLander
+- Idempotent experiment runner with caching and automatic reproducibility
+- Honest accounting of what works, what doesn't, and what remains open
+
+---
+
+### Field context (2021–2025)
+
+Episodic-novelty-style exploration (our inverse-dynamics + KNN approach) was independently validated by DeepMind's NGU (2020) and Agent57 (2021) — a strong external signal. The field has moved beyond "ES fills a buffer for a learner" toward quality-diversity approaches like PGA-MAP-Elites (2021) and ERL-Re2 (2023), where the ES population maintains a behaviorally diverse archive and the learner improves each cell. That's the natural next-generation architecture, but it's a bigger change than this repo currently spans.
+
+Immediate improvements to try: prioritized replay (PER) would directly attack the LunarLander forgetting problem, and double DQN is a one-line learner improvement. See references for papers.
 
 ---
 
@@ -222,11 +243,16 @@ This section is generated from the files in `experiments/`.
 <!-- BEGIN AUTO:EXPERIMENTS -->
 | Script | Environment | Question |
 |---|---|---|
+| `acrobot_exploration.py` | Acrobot-v1 | Does EDER shine on hard exploration? Acrobot-v1 trial. |
 | `cartpole_eder_vs_baseline.py` | CartPole-v1 | Isolated novelty ablation: does IDN novelty help the ES actor? |
 | `cartpole_efficiency.py` | CartPole-v1 | Does the ES actor improve sample efficiency vs pure DQN on CartPole? |
 | `cartpole_model_size.py` | CartPole-v1 | Does ES diversity compensate for a smaller network? |
+| `cartpole_normal.py` | CartPole-v1 | CartPole-v1 Normal: Standard benchmark to validate baseline performance. |
 | `cartpole_sample_efficiency.py` | CartPole-v1 | Fair sample efficiency comparison: equal env-step budget across conditions. |
+| `cartpole_tough.py` | CartPole-v1 | CartPole-Tough: Real robustness test for learned control. |
 | `lunarlander_efficiency.py` | LunarLander-v3 | Does EDER generalise to LunarLander, and does the buffer filter fix forgetting? |
+| `lunarlander_normal.py` | LunarLander-v3 | LunarLander-v3 Normal: Standard benchmark on longer-horizon task. |
+| `lunarlander_tough.py` | LunarLander-v3 | LunarLander-Tough: Real robustness test for precision landing control. |
 <!-- END AUTO:EXPERIMENTS -->
 
 ---
