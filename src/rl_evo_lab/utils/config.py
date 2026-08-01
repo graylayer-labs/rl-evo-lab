@@ -150,15 +150,20 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "solved_reward": 475.0,
         "novelty_decay_start_reward": 400.0,
     },
-    # CartPole-Tough: random starting position/angle + stricter termination (12° vs 24°) + 1000 step limit
+    # CartPole-Tough: Category: discrete_dense_short
+    # Random starting position/angle + stricter termination (12° vs 24°) + 1000 step limit
+    # Uses same tuned HPs as CartPole Normal to test robustness improvement
     "cartpole_tough": {
         "env_id": "CartPole-v1",
         "obs_dim": 4,
         "act_dim": 2,
+        "category": "discrete_dense_short",
         "total_episodes": 2000,
         "buffer_capacity": 50_000,
         "min_buffer_size": 500,
-        "es_n_workers": 6,
+        "es_sigma": 0.1,  # tuned: same as CartPole Normal
+        "beta": 0.1,  # tuned: same as CartPole Normal
+        "novelty_ramp_episodes": 200,  # tuned: same as CartPole Normal
         "target_update_freq": 100,
         "epsilon_decay_episodes": 200,
         "solved_reward": 10000.0,  # high threshold so only full 1000-step episodes count
