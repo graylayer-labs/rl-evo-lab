@@ -28,7 +28,28 @@ This section summarizes the key findings across CartPole and LunarLander environ
 
 ### The Bottom Line
 
-**Tuning helps, but reveals fundamental ES limitations.** Strengthening the novelty signal (β: 0.02 → 0.1) improves EDER from underperforming (186.7 on old HPs) to 217.7 on CartPole Normal — beating ES+DQN (198.5) by 9.6%. Yet DQN achieves 248.1, and ES methods catastrophically fail on LunarLander despite identical tuning. The gap between quick diagnostics (predicted 87% wins) and full 2000-episode runs (actual 9.6%) reveals that ES variance grows over time, a constraint that tuning alone cannot overcome.
+**Tuning improves ES-ES comparison, but doesn't solve the ES-vs-DQN problem.** With β: 0.02 → 0.1, σ: 0.06 → 0.1, ramp: 100 → 200, EDER reaches 217.7 on CartPole Normal — beating ES+DQN (198.5) by 9.6%. However, **DQN wins overall at 248.1** despite simpler epsilon-greedy exploration. On CartPole Tough, EDER 141.3 barely edges ES+DQN 135.9 (+4%). All methods show high variance (std 40–220), meaning differences are often within noise. The honest finding: tuning made EDER better than ES+DQN, but not competitive with DQN. ES exploration remains fundamentally limited.
+
+### Raw Data (Objective Numbers)
+
+**CartPole Normal (2000 episodes, 3 seeds):**
+| Method | Mean | Std Dev | Seeds |
+|--------|------|---------|-------|
+| DQN | 248.08 | 218.23 | [116.8, 127.5, 500.0] |
+| EDER | 217.72 | 196.16 | [90.8, 443.6, 118.7] |
+| ES+DQN | 198.53 | 113.28 | [320.4, 178.9, 96.3] |
+
+**CartPole Tough (2000 episodes, 3 seeds):**
+| Method | Mean | Std Dev | Seeds |
+|--------|------|---------|-------|
+| EDER | 141.35 | 62.85 | [213.8, 101.5, 108.7] |
+| ES+DQN | 135.87 | 50.35 | [193.7, 112.5, 101.5] |
+| DQN | 134.40 | 39.62 | [105.7, 117.9, 179.6] |
+
+**Key observations:** 
+- All methods exhibit high variance relative to mean differences
+- DQN wins Normal, EDER marginally wins Tough
+- Differences (9–14 points) are often within one standard deviation
 
 ### Why ES Methods Underperform (The Diagnosis)
 
