@@ -103,29 +103,29 @@ These changes directly address the root causes identified in the diagnosis: weak
 
 ---
 
-### CartPole: Tuning Improves ES, But DQN Still Competitive
+### CartPole: DQN Wins, EDER Beats ES+DQN (Barely)
 
 **CartPole Normal (Tuned HPs: β=0.1, σ=0.1, ramp=200):**
 
-![CartPole Normal comparison with tuned HPs showing EDER 217.7 mean, ES+DQN 198.5, DQN 248.1. High variance visible in 90-443 EDER spread, particularly seed42.](docs/img/cartpole_normal_comparison.png)
+![CartPole Normal comparison showing DQN dominance (248.1 mean), with EDER (217.7) beating ES+DQN (198.5) within high variance.](docs/img/cartpole_normal_comparison.png)
 
 With tuned hyperparameters:
+- **DQN: 248.1 mean** ← **CHART WINNER** (superior epsilon-greedy)
 - **EDER: 217.7 mean** (improved from 186.7 with old HPs)
 - **ES+DQN: 198.5 mean** (improved from 104.2)
-- **DQN: 248.1 mean** (still outperforms both ES methods)
 
-The tuning improves ES methods substantially. EDER now beats ES+DQN by 9.6% — a meaningful gain but far less dramatic than the 87% advantage predicted by quick 100-episode diagnostics. This discrepancy is key: over 2000 episodes, ES instability compounds despite stronger novelty signal.
+The tuning does improve EDER vs ES+DQN (+9.6%), but this gain is **within experimental noise** (EDER std dev: 196.16, which is 20× larger than the 19-point improvement). **DQN outperforms tuned EDER by 13.9%** — showing that simpler epsilon-greedy exploration beats sophistication tuning. The diagnostic sweeps predicted 87% improvement; actual validation showed 9.6% — 87% of the gain disappeared at scale.
 
 **CartPole Tough (Tuned HPs: random start, stricter angle, 1000 steps):**
 
-![CartPole Tough with tuned HPs: EDER 141.3 mean edges out ES+DQN 135.9 and DQN 134.4, but improvement margins collapse under robustness stress.](docs/img/cartpole_tough_comparison.png)
+![CartPole Tough comparison showing all three methods collapsed to ~135–141 mean with high variance and overlapping confidence bands.](docs/img/cartpole_tough_comparison.png)
 
 With tuned hyperparameters:
-- **EDER: 141.3 mean** (seeds: 213.8, 101.5, 108.7)
+- **EDER: 141.3 mean** (barely wins; seeds: 213.8, 101.5, 108.7)
 - **ES+DQN: 135.9 mean** (seeds: 193.7, 112.5, 101.5)
 - **DQN: 134.4 mean** (seeds: 105.7, 117.9, 179.6)
 
-**Critical insight:** When environmental randomness increases, tuning benefits collapse. EDER's advantage shrinks from 9.6% on Normal to 4.0% on Tough. Across all three conditions, seed-level variability is high (ranges 100-213), suggesting tuned HPs improve ES exploration but cannot overcome fundamental brittleness under perturbation.
+**The real story:** All three methods collapse to essentially the same performance (+/- 6 points) when robustness challenge is added. EDER's 4% margin over ES+DQN is **trivial relative to variance** (EDER std: 62.85). Across both environments, tuning helped ES vs ES (+9.6% Normal, +4.0% Tough) but **failed to make ES competitive with DQN** or resilient to perturbation. This is the negative result: tuning cannot overcome ES fundamental brittleness.
 
 ---
 
