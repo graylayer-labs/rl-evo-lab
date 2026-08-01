@@ -28,7 +28,7 @@ This section summarizes the key findings across CartPole and LunarLander environ
 
 ### The Bottom Line
 
-**Tuning improves ES-ES comparison, but doesn't solve the ES-vs-DQN problem.** With β: 0.02 → 0.1, σ: 0.06 → 0.1, ramp: 100 → 200, EDER reaches 217.7 on CartPole Normal — beating ES+DQN (198.5) by 9.6%. However, **DQN wins overall at 248.1** despite simpler epsilon-greedy exploration. On CartPole Tough, EDER 141.3 barely edges ES+DQN 135.9 (+4%). All methods show high variance (std 40–220), meaning differences are often within noise. The honest finding: tuning made EDER better than ES+DQN, but not competitive with DQN. ES exploration remains fundamentally limited.
+**Tuning ES methods helps, but cannot overcome their fundamental limitations.** Systematic hyperparameter tuning (β: 0.02→0.1, σ: 0.06→0.1, ramp: 100→200) improves EDER by 9.6% over ES+DQN on CartPole Normal. However, this improvement is **within experimental noise** (std dev 196 for EDER) and **disappears under robustness challenge** (4.0% on CartPole Tough). More critically: **DQN dominates at 248.1 mean**, outperforming tuned EDER by 13.9%. The key finding is negative, not positive: tuning cannot make ES-based exploration competitive with simple epsilon-greedy DQN on CartPole, and both ES methods catastrophically fail on LunarLander. ES exploration appears to be fundamentally limited, not just poorly tuned.
 
 ### Raw Data (Objective Numbers)
 
@@ -47,9 +47,11 @@ This section summarizes the key findings across CartPole and LunarLander environ
 | DQN | 134.40 | 39.62 | [105.7, 117.9, 179.6] |
 
 **Key observations:** 
-- All methods exhibit high variance relative to mean differences
-- DQN wins Normal, EDER marginally wins Tough
-- Differences (9–14 points) are often within one standard deviation
+- **EDER's variance (196.16 std) is 1.6× higher than ES+DQN (113.28 std)** — tuning did not stabilize ES exploration
+- **9.6% EDER improvement over ES+DQN is within noise** — signal-to-noise ratio 0.11x, not meaningful
+- **DQN outperforms tuned EDER by 13.9% on Normal** — tuning ES doesn't make it competitive with epsilon-greedy
+- Differences are often within one standard deviation, meaning statistical significance is unclear
+- **Diagnostic sweeps predicted 73% improvement (100 eps); actual validation showed 9.6% (2000 eps)** — 87% of predicted gain vanished at scale
 
 ### Why ES Methods Underperform (The Diagnosis)
 
