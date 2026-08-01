@@ -27,17 +27,19 @@ def _rank_normalize(fitnesses: np.ndarray) -> np.ndarray:
     """Rank fitnesses and normalise to [-0.5, 0.5].
 
     The lowest-fitness worker receives -0.5, the highest +0.5.
-    Ties share the same rank (dense rank).
+    Ties share the same dense rank (identical fitnesses get identical ranks).
     """
     n = len(fitnesses)
-    # argsort gives indices that would sort ascending; assign ranks 0..n-1
-    ranks = np.empty(n, dtype=np.float32)
-    order = np.argsort(fitnesses)  # ascending: worst → best
-    ranks[order] = np.arange(n, dtype=np.float32)
-    if n > 1:
-        ranks = ranks / (n - 1) - 0.5  # map [0, n-1] → [-0.5, 0.5]
-    else:
-        ranks[:] = 0.0
+    if n == 0:
+        return np.empty(0, dtype=np.float32)
+    # Use np.unique to assign dense ranks: tied fitnesses get the same rank
+    uniques, inverse = np.unique(fitnesses, return_inverse=True)  # inverse gives dense rank per element
+    n_unique = len(uniques)
+    if n_unique == 1:
+        # All identical fitnesses → all ranks are 0
+        return np.zeros(n, dtype=np.float32)
+    # Map dense ranks [0, n_unique-1] → [-0.5, 0.5]
+    ranks = inverse.astype(np.float32) / (n_unique - 1) - 0.5
     return ranks
 
 
@@ -142,6 +144,37 @@ class ESActor:
         self._learner_eval = reward
 
     # ------------------------------------------------------------------
+    # Worker job scheduling
+    # ------------------------------------------------------------------
+
+    def _build_worker_jobs(self, episode_num: int, eff_n_workers: int) -> list[tuple[int, int]]:
+        """Build list of (seed, sign) pairs for worker jobs this generation.
+
+        Seeds use a constant stride (cfg.es_n_workers) to ensure they never collide
+        across generations even as eff_n_workers decays. This guarantees each episode's
+        seed block is disjoint.
+        """
+        cfg = self.cfg
+        stride = cfg.es_n_workers  # constant max stride — seeds scale with this, not eff_n_workers
+        base = episode_num * stride
+
+        jobs: list[tuple[int, int]] = []
+        if cfg.es_antithetic:
+            n_seeds = eff_n_workers // 2
+            for k in range(n_seeds):
+                seed = base + k
+                jobs.append((seed, +1))
+                jobs.append((seed, -1))
+            if eff_n_workers % 2 != 0:
+                seed = base + n_seeds
+                jobs.append((seed, +1))
+        else:
+            for k in range(eff_n_workers):
+                seed = base + k
+                jobs.append((seed, +1))
+        return jobs
+
+    # ------------------------------------------------------------------
     # Buffer push filtering
     # ------------------------------------------------------------------
 
@@ -210,20 +243,7 @@ class ESActor:
         eff_n_workers = self._effective_n_workers()
 
         # ---- Build list of (seed, sign) pairs -------------------------
-        worker_jobs: list[tuple[int, int]] = []
-        if cfg.es_antithetic:
-            n_seeds = eff_n_workers // 2
-            for k in range(n_seeds):
-                seed = episode_num * eff_n_workers + k
-                worker_jobs.append((seed, +1))
-                worker_jobs.append((seed, -1))
-            if eff_n_workers % 2 != 0:
-                seed = episode_num * eff_n_workers + n_seeds
-                worker_jobs.append((seed, +1))
-        else:
-            for k in range(eff_n_workers):
-                seed = episode_num * eff_n_workers + k
-                worker_jobs.append((seed, +1))
+        worker_jobs = self._build_worker_jobs(episode_num, eff_n_workers)
 
         # ---- Run worker episodes in parallel (threads) ----------------
         # Workers are read-only w.r.t. IDN and global_novelty during collection;
@@ -292,8 +312,8 @@ class ESActor:
 
             # Update IDN loss EMA (α=0.05 for slow tracking)
             self._idn_loss_ema = 0.95 * self._idn_loss_ema + 0.05 * idn_loss
-            # Record baseline IDN loss at the end of warmup
-            if self._idn_loss_init is None and episode_num == cfg.novelty_warmup_episodes - 1:
+            # Record baseline IDN loss at/after the end of warmup (on first episode with transitions)
+            if self._idn_loss_init is None and episode_num >= cfg.novelty_warmup_episodes - 1:
                 self._idn_loss_init = self._idn_loss_ema
 
             # Add this generation's embeddings to the global novelty buffer.

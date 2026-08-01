@@ -86,8 +86,9 @@ class DQNLearner:
                     obs_t = torch.from_numpy(obs).float().unsqueeze(0).to(self.device)
                     action = self.policy_net(obs_t).argmax(dim=1).item()
             next_obs, reward, terminated, truncated, _ = env.step(action)
-            done = terminated or truncated
-            buffer.push(obs, action, float(reward), next_obs, float(done))
+            done = terminated or truncated  # loop control: end episode on either terminal or truncation
+            # Bootstrap: only zero on true terminal, not time-limit truncation (env is still valid)
+            buffer.push(obs, action, float(reward), next_obs, float(terminated))
             obs = next_obs
             total_reward += float(reward)
             n_steps += 1

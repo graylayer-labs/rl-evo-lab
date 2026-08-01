@@ -16,6 +16,22 @@ from rl_evo_lab.utils.logging import EpisodeLog, RunLogger
 from rl_evo_lab.utils.seeding import seed_everything
 
 
+def _compute_sync_threshold(sync_eval_threshold: float, mean_extrinsic_return: float) -> float:
+    """Compute the learner evaluation threshold for actor-learner synchronisation.
+
+    The intent is to sync only when the learner has reached a performance fraction of the actor.
+    For positive rewards: threshold = threshold_fraction * mean_return (e.g., 0.7 * 100 = 70).
+    For negative rewards: mirror symmetrically so the tolerance is equivalent in magnitude.
+        E.g., 0.7 * -100 should give -130 (learner can be 30% worse, or 30 more negative).
+    """
+    if mean_extrinsic_return >= 0:
+        return sync_eval_threshold * mean_extrinsic_return
+    else:
+        # For negative rewards: invert so a 30% tolerance means 30% worse (more negative).
+        # threshold = mean * (2 - sync_eval_threshold), e.g., -100 * (2 - 0.7) = -130
+        return mean_extrinsic_return * (2.0 - sync_eval_threshold)
+
+
 def train(
     cfg: EDERConfig = EDERConfig(),
     log_dir: str = "runs",
@@ -99,7 +115,7 @@ def train(
         # Periodic pre-solve sync: pulls ES toward learner before it fully solves,
         # preventing the actor from diverging too far. Skipped when solved (handled above).
         if cfg.use_es and not did_sync and episode % cfg.sync_freq == 0:
-            threshold = cfg.sync_eval_threshold * mean_extrinsic_return
+            threshold = _compute_sync_threshold(cfg.sync_eval_threshold, mean_extrinsic_return)
             if last_eval >= threshold:
                 actor.sync_from_learner(learner.get_weights())
                 did_sync = True

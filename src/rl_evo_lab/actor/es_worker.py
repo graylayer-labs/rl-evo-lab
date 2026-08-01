@@ -73,7 +73,7 @@ def run_worker_episode(
             action = net(obs_t).argmax(dim=1).item()
 
         next_obs, reward, terminated, truncated, _ = env.step(action)
-        done = terminated or truncated
+        done = terminated or truncated  # loop control: end episode on either terminal or truncation
 
         obs_arr = np.array(obs, dtype=np.float32)
         next_obs_arr = np.array(next_obs, dtype=np.float32)
@@ -98,7 +98,8 @@ def run_worker_episode(
         fitness += augmented_reward
         extrinsic_return += float(reward)
 
-        transitions.append((obs_arr, int(action), float(reward), next_obs_arr, bool(done)))
+        # Bootstrap: only zero on true terminal, not time-limit truncation (env is still valid)
+        transitions.append((obs_arr, int(action), float(reward), next_obs_arr, bool(terminated)))
 
         obs = next_obs
 

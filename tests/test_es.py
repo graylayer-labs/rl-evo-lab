@@ -202,3 +202,141 @@ def test_select_workers_balanced_alpha():
     assert 0 in selected
     assert 1 in selected
     assert 2 not in selected
+
+
+# ---------------------------------------------------------------------------
+# 5. Seed collision detection under worker decay (B3)
+# ---------------------------------------------------------------------------
+
+
+def test_seed_collision_free_under_decay():
+    """Seeds should be disjoint across episodes even when eff_n_workers decays.
+
+    Bug B3: old code used seed = episode_num * eff_n_workers + k, where eff_n_workers
+    decays per generation. This causes collisions across episodes: e.g., ep10×50workers=500
+    and ep50×10workers=500 → same noise vectors reused → loss of diversity.
+    New code uses a constant stride (cfg.es_n_workers), guaranteeing disjoint seed ranges
+    per episode. Note: within an episode, antithetic pairs intentionally share seeds.
+    """
+    cfg = EDERConfig(
+        es_n_workers=50,
+        es_antithetic=True,
+        novelty_solve_decay=True,
+        solved_reward=475.0,
+        novelty_decay_start_reward=400.0,
+        es_workers_min=4,
+    )
+    device = torch.device("cpu")
+    actor = ESActor(cfg, device)
+
+    # Simulate a decaying schedule: collect job seeds across multiple episodes
+    episode_seed_ranges = {}
+    for episode_num in [0, 50, 100, 150, 200]:
+        # Simulate convergence progress
+        actor._learner_eval = 400.0 + (episode_num / 200.0) * (475.0 - 400.0)
+        eff_n_workers = actor._effective_n_workers()
+        jobs = actor._build_worker_jobs(episode_num, eff_n_workers)
+        unique_seeds = sorted(set(seed for seed, _ in jobs))
+        episode_seed_ranges[episode_num] = unique_seeds
+
+    # Verify no seed collisions ACROSS EPISODES (disjoint ranges)
+    all_episode_seeds = []
+    for ep, seeds in episode_seed_ranges.items():
+        all_episode_seeds.extend(seeds)
+
+    # Check: all unique seeds across episodes should be unique
+    # (allowing within-episode duplication for antithetic pairs)
+    assert len(all_episode_seeds) == len(set(all_episode_seeds)), (
+        f"Seed collision detected across episodes: "
+        f"{[(ep, seeds) for ep, seeds in episode_seed_ranges.items()]}"
+    )
+
+    # Also verify the ranges are non-overlapping
+    seed_ranges_list = list(episode_seed_ranges.values())
+    for i, range_i in enumerate(seed_ranges_list):
+        for j, range_j in enumerate(seed_ranges_list):
+            if i < j:
+                overlap = set(range_i) & set(range_j)
+                assert not overlap, (
+                    f"Episodes {list(episode_seed_ranges.keys())[i]} and "
+                    f"{list(episode_seed_ranges.keys())[j]} have overlapping seed ranges: {overlap}"
+                )
+
+
+# ---------------------------------------------------------------------------
+# 6. IDN baseline capture robustness (B5)
+# ---------------------------------------------------------------------------
+
+
+def test_idn_baseline_captured_after_warmup():
+    """IDN loss baseline should be captured at/after warmup, on first episode with transitions.
+
+    Bug B5: old code used == to gate the baseline capture on an exact episode, failing
+    silently if that episode had zero transitions. New code uses >= so it captures on
+    the first non-empty episode at/after the warmup boundary.
+    """
+    from rl_evo_lab.utils.config import make_config
+
+    cfg = make_config("cartpole", novelty_warmup_episodes=3, es_n_workers=2)
+    device = torch.device("cpu")
+    actor = ESActor(cfg, device)
+    idn = InverseDynamicsNetwork(cfg, device)
+    buffer = ReplayBuffer(cfg.buffer_capacity, cfg.obs_dim)
+
+    env_fn = lambda: gym.make("CartPole-v1")
+
+    # Run a generation at the boundary episode (episode 2 = warmup_episodes - 1)
+    # This should trigger baseline capture (or at least be ready to capture on next non-empty episode)
+    stats = actor.run_generation(env_fn, idn, buffer, episode_num=2)
+
+    # After running generation 2 (at boundary), baseline should have been captured
+    # (because CartPole episodes are rarely empty; we get transitions)
+    if stats.idn_loss > 0.0:  # only check if IDN actually trained
+        assert actor._idn_loss_init is not None, (
+            "IDN baseline should be captured at/after warmup episode. "
+            "Got _idn_loss_init=None."
+        )
+
+    # Continue to post-warmup: baseline should persist, not reset
+    initial_baseline = actor._idn_loss_init
+    stats2 = actor.run_generation(env_fn, idn, buffer, episode_num=3)
+    assert actor._idn_loss_init == initial_baseline, (
+        "Baseline should not change after first capture"
+    )
+
+
+def test_idn_beta_uses_baseline():
+    """Effective beta should scale with IDN confidence once baseline is captured."""
+    from rl_evo_lab.utils.config import make_config
+
+    cfg = make_config(
+        "cartpole",
+        novelty_warmup_episodes=2,
+        novelty_ramp_episodes=50,
+        beta=0.1,
+        es_n_workers=2,
+    )
+    device = torch.device("cpu")
+    actor = ESActor(cfg, device)
+
+    # Test at episode 3 (after warmup, during ramp phase)
+    # At episode 3: ramp = (3-2)/50 = 0.02 → should see non-zero beta
+
+    # With good IDN (loss < baseline): confidence > 0 → beta should be scaled
+    actor._idn_loss_init = 0.5
+    actor._idn_loss_ema = 0.3  # better than baseline
+    beta_with_good_idn = actor._effective_beta(3)
+
+    # With bad IDN (loss > baseline): confidence → 0 → beta should be suppressed
+    actor._idn_loss_ema = 1.0  # worse than baseline
+    beta_with_bad_idn = actor._effective_beta(3)
+
+    # Good IDN should produce higher beta than bad IDN
+    assert beta_with_good_idn > beta_with_bad_idn, (
+        f"Good IDN (loss 0.3) should produce higher beta than bad IDN (loss 1.0). "
+        f"Got {beta_with_good_idn} vs {beta_with_bad_idn}"
+    )
+    # Both should be positive during ramp (if baseline is set)
+    assert beta_with_good_idn > 0.0, (
+        f"With baseline set and ramp phase, beta should be > 0. Got {beta_with_good_idn}"
+    )
