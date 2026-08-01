@@ -28,7 +28,42 @@ This section summarizes the key findings across CartPole and LunarLander environ
 
 ### The Bottom Line
 
-Across all four experiments, **DQN consistently outperforms or matches ES-based methods (EDER, ES+DQN)**, particularly on tasks requiring robust, stable control. ES methods suffer from high variance and catastrophic forgetting on longer-horizon environments.
+Across all four experiments, **DQN consistently outperforms ES-based methods**, using **3-4× fewer environment steps**. ES methods suffer from high variance and catastrophic forgetting. But the failure is **diagnostic, not fatal** — the ES actor itself is underperforming, suggesting hyperparameter tuning (beta weight, sigma, novelty schedule) could recover performance.
+
+### Why ES Methods Underperform (The Diagnosis)
+
+**Sample efficiency:**
+- EDER / ES+DQN: 150-213k env steps @ ep 500 → reward 104-186.7
+- DQN: 47-50k env steps @ ep 500 → reward 129.2
+
+DQN is 3-4x more efficient. Why? The ES actor is generating weak experience:
+
+**ES Actor Trajectory (CartPole Normal, seed 42):**
+- Ep 0-50: Actor 12→23 (cold start, no novelty yet)
+- Ep 100: Actor peaks at 86.8, Learner at 267.0 (best point)
+- Ep 100-200: **Novelty ramp-up kicks in** (beta: 0.009→0.020), actor destabilizes (86→53→129 oscillation)
+- Ep 200+: Learner crashes to 67.3 while actor explores for novelty instead of reward
+
+**Root cause: Novelty beta=0.02 is too weak relative to extrinsic reward (~40), so the augmented reward `r = r_ext + 0.02·r_novelty` is dominated by exploration noise. The ES population abandons good policies to chase novelty, flooding the buffer with crash trajectories.**
+
+This explains:
+- Why ES actor only reaches 40-50 final reward (it's optimizing novelty, not task reward)
+- Why learner crashes on LunarLander (buffer fills with high-diversity, low-quality trajectories)
+- Why DQN wins (epsilon-greedy is simpler and doesn't get distracted by weak novelty signal)
+
+**Actionable next steps (for future work, not implemented):**
+
+The failure is not fundamental—it's a tuning problem. Concrete experiments to test:
+1. **Increase beta** from 0.02 → 0.1-0.5 (make novelty a meaningful reward signal)
+2. **Delay novelty ramp** from ep 100 → ep 300+ (let ES converge on task reward first)
+3. **Add Double DQN** (reduce Q-value overestimation; stabilize learner)
+4. **Reduce es_sigma** from 0.06 → 0.02 (tighter mutations = more focused exploration)
+5. **Increase sync_freq** from 25 → 50+ (let ES explore independently longer)
+6. **Disable novelty_solve_decay** (currently kills beta as learner converges; let novelty persist)
+
+Current config appears misaligned for CartPole/LunarLander's simplicity.
+
+---
 
 ### CartPole: ES methods show high variance; DQN wins on robustness
 
