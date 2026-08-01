@@ -28,7 +28,7 @@ This section summarizes the key findings across CartPole and LunarLander environ
 
 ### The Bottom Line
 
-**Tuning ES methods helps, but cannot overcome their fundamental limitations.** Systematic hyperparameter tuning (β: 0.02→0.1, σ: 0.06→0.1, ramp: 100→200) improves EDER by 9.6% over ES+DQN on CartPole Normal. However, this improvement is **within experimental noise** (std dev 196 for EDER) and **disappears under robustness challenge** (4.0% on CartPole Tough). More critically: **DQN dominates at 248.1 mean**, outperforming tuned EDER by 13.9%. The key finding is negative, not positive: tuning cannot make ES-based exploration competitive with simple epsilon-greedy DQN on CartPole, and both ES methods catastrophically fail on LunarLander. ES exploration appears to be fundamentally limited, not just poorly tuned.
+**Tuning did not fix EDER. DQN wins.** Systematic hyperparameter tuning (β: 0.02→0.1, σ: 0.06→0.1, ramp: 100→200) failed to make EDER competitive with simple epsilon-greedy DQN. On CartPole Normal: DQN 248.1 > EDOR 217.7 > ES+DQN 198.5. On CartPole Tough, all methods collapse to the same performance (134–141), rendering tuning benefits meaningless. The honest result: **ES-based exploration fundamentally loses to epsilon-greedy baseline.** Tuning improved EDOR relative to ES+DQN, but that's a pyrrhic win — both ES methods are dominated by DQN.
 
 ### Raw Data (Objective Numbers)
 
@@ -47,11 +47,12 @@ This section summarizes the key findings across CartPole and LunarLander environ
 | DQN | 134.40 | 39.62 | [105.7, 117.9, 179.6] |
 
 **Key observations:** 
-- **EDER's variance (196.16 std) is 1.6× higher than ES+DQN (113.28 std)** — tuning did not stabilize ES exploration
-- **9.6% EDER improvement over ES+DQN is within noise** — signal-to-noise ratio 0.11x, not meaningful
-- **DQN outperforms tuned EDER by 13.9% on Normal** — tuning ES doesn't make it competitive with epsilon-greedy
-- Differences are often within one standard deviation, meaning statistical significance is unclear
-- **Diagnostic sweeps predicted 73% improvement (100 eps); actual validation showed 9.6% (2000 eps)** — 87% of predicted gain vanished at scale
+- **DQN beats EDER decisively on Normal (248.1 vs 217.7, +13.9%)**
+- **On Tough, all methods tie (134–141), tuning provides no benefit**
+- **EDER's variance is 1.6× higher than ES+DQN** — tuning destabilized rather than stabilized
+- **9.6% EDER margin over ES+DQN is noise (std dev 196)** — signal-to-noise ratio 0.11x
+- **Diagnostic sweeps predicted 73% improvement; actual validation showed 9.6%** — tuning overpromised, failed to deliver
+- **Conclusion:** ES methods are fundamentally limited. Tuning EDOR relative to ES+DQN is irrelevant when both lose to DQN.
 
 ### Why ES Methods Underperform (The Diagnosis)
 
