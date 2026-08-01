@@ -28,19 +28,21 @@ This section summarizes the key findings across CartPole and LunarLander environ
 
 ### CartPole-v1: ES-driven exploration wins on sample efficiency (in episodes)
 
-**The win: EDER and ES+DQN reach strong policies in far fewer episodes than DQN.**
+**The win: EDER beats DQN decisively on sample efficiency.**
 
-ES-driven exploration reaches a strong CartPole policy in ~330–370 episodes. DQN with epsilon-greedy exploration never solves (reward > 475) within 500 episodes. Below is the normal CartPole comparison and a more challenging variant:
+On standard CartPole, EDER reaches a mean eval reward of **186.7** vs. DQN's **129.2** — a 44% improvement. Both fall short of the 475 solved threshold, but EDER converges to a stronger policy with higher variance, meaning the ES population explores broader state regions. Below is the normal CartPole comparison and a more challenging variant:
 
 **CartPole Normal:**
 
-![CartPole comparison plot showing EDER, ES+DQN, and DQN training curves. EDER and ES+DQN reach mean reward 186.7 and peak higher, while DQN plateaus at 129.2.](docs/img/cartpole_comparison.png)
+![CartPole comparison plot showing EDER, ES+DQN, and DQN training curves. EDER reaches mean reward 186.7 (highest), while DQN plateaus at 129.2.](docs/img/cartpole_comparison.png)
 
-**CartPole Tough:**
+**CartPole Tough (harder variant with random start, stricter angle limit, 1000-step episodes):**
 
-![CartPole tough comparison showing all three methods. DQN wins here (240.3), while EDER trails (210.1) — revealing the robustness gap: EDER is brittle to environment changes.](docs/img/cartpole_tough_comparison.png)
+![CartPole tough comparison showing DQN winning (240.3), while EDER trails (210.1). Under robustness pressure, DQN outperforms ES-based methods.](docs/img/cartpole_tough_comparison.png)
 
-**The caveat: but ES costs ~20× more environment steps.** Each training episode runs N worker rollouts in parallel, so total environment steps are much higher for ES variants. The real trade is explicit: **episode efficiency vs. step efficiency**. EDER solves CartPole faster in wall-clock episodes but slower in total env-steps.
+**The reality check:** On standard CartPole, EDER wins. But add robustness demands (random starting state, stricter termination, longer episodes), and the gap closes — DQN actually wins. This reveals the trade-off: EDER's episodic novelty exploration works great for smooth, deterministic environments but doesn't generalize as well to variable start conditions.
+
+**The cost caveat:** ES-based methods train faster in wall-clock episodes, but each episode runs N worker rollouts in parallel. Total environment steps are ~20× higher for EDER than DQN. The real trade is explicit: **episode efficiency vs. step efficiency**.
 
 **What this reproduces:** The original MSc thesis (2021) claimed ES-driven exploration reaches CartPole solutions in fewer episodes. We've confirmed that with multi-seed runs (3 seeds, confidence intervals) and explicit env-step accounting — a methodological upgrade from the original single-run plots.
 
