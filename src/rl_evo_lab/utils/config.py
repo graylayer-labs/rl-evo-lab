@@ -107,6 +107,9 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "buffer_capacity": 50_000,
         "min_buffer_size": 500,
         "es_n_workers": 6,
+        "es_sigma": 0.1,  # tuned via diagnostic sweep: 0.1 best for exploration
+        "beta": 0.1,  # tuned via diagnostic sweep: 0.1 (5x default) makes EDER beat ES+DQN
+        "novelty_ramp_episodes": 200,  # tuned via diagnostic sweep: delay ramp to prevent ep 100-200 crash
         "target_update_freq": 100,
         "epsilon_decay_episodes": 200,
         "solved_reward": 475.0,
