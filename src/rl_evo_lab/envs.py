@@ -13,20 +13,26 @@ class CartPoleToughWrapper(gym.Wrapper):
         self.step_count = 0
         self.angle_limit = 0.209  # 12° in radians
         self.position_limit = 2.0  # slightly tighter than default 2.4
+        # Per-instance RNG to avoid thread-race on global np.random
+        self.rng = np.random.Generator(np.random.PCG64(0))
 
-    def reset(self, **kwargs):
-        # Reset environment first
+    def reset(self, seed=None, **kwargs):
+        # Reset environment first (without passing seed to avoid double-seeding the base env)
         obs, info = self.env.reset(**kwargs)
         self.step_count = 0
 
-        # Apply random starting state
+        # Create per-instance RNG from seed to avoid thread-race on global np.random
+        if seed is not None:
+            self.rng = np.random.Generator(np.random.PCG64(seed))
+
+        # Apply random starting state using the instance RNG
         unwrapped_env = self.env.unwrapped
         state = unwrapped_env.state
         state = np.array(state, dtype=np.float32)
         # Random pole angle: [-0.2, +0.2]
-        state[2] = np.random.uniform(-0.2, 0.2)
+        state[2] = self.rng.uniform(-0.2, 0.2)
         # Random cart position: [-0.5, +0.5]
-        state[0] = np.random.uniform(-0.5, 0.5)
+        state[0] = self.rng.uniform(-0.5, 0.5)
         unwrapped_env.state = state
 
         # Return observation based on modified state
@@ -55,12 +61,18 @@ class LunarLanderToughWrapper(gym.Wrapper):
         self.max_steps = 2000
         self.step_count = 0
         self.landing_zone_radius = 0.1
+        # Per-instance RNG to avoid thread-race on global np.random
+        self.rng = np.random.Generator(np.random.PCG64(0))
 
-    def reset(self, **kwargs):
+    def reset(self, seed=None, **kwargs):
         obs, info = self.env.reset(**kwargs)
         self.step_count = 0
 
-        # Apply random starting state
+        # Create per-instance RNG from seed to avoid thread-race on global np.random
+        if seed is not None:
+            self.rng = np.random.Generator(np.random.PCG64(seed))
+
+        # Apply random starting state using the instance RNG
         unwrapped_env = self.env.unwrapped
         state = (
             np.array(unwrapped_env.state, dtype=np.float32)
@@ -68,11 +80,11 @@ class LunarLanderToughWrapper(gym.Wrapper):
             else obs.copy()
         )
         # Random position perturbation
-        state[0] += np.random.uniform(-0.3, 0.3)  # x position
-        state[1] += np.random.uniform(-0.1, 0.1)  # y position
+        state[0] += self.rng.uniform(-0.3, 0.3)  # x position
+        state[1] += self.rng.uniform(-0.1, 0.1)  # y position
         # Random velocity perturbation
-        state[2] += np.random.uniform(-0.5, 0.5)  # x velocity
-        state[3] += np.random.uniform(-0.5, 0.5)  # y velocity
+        state[2] += self.rng.uniform(-0.5, 0.5)  # x velocity
+        state[3] += self.rng.uniform(-0.5, 0.5)  # y velocity
 
         if hasattr(unwrapped_env, "state"):
             unwrapped_env.state = state

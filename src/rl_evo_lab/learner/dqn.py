@@ -49,8 +49,10 @@ class DQNLearner:
     def evaluate(self, env: gym.Env, n_episodes: int) -> float:
         self.policy_net.eval()
         total = 0.0
-        for _ in range(n_episodes):
-            obs, _ = env.reset()
+        for eval_idx in range(n_episodes):
+            # Deterministic eval seed: ensures reproducible eval trajectory
+            eval_seed = self.cfg.seed + 10_000 + eval_idx
+            obs, _ = env.reset(seed=eval_seed)
             done = False
             while not done:
                 with torch.no_grad():
@@ -73,7 +75,9 @@ class DQNLearner:
         frac = min(1.0, episode / max(decay, 1))
         epsilon = self.cfg.epsilon_start + frac * (self.cfg.epsilon_end - self.cfg.epsilon_start)
 
-        obs, _ = env.reset()
+        # Seed reset for reproducible episode (unique per episode)
+        collect_seed = self.cfg.seed + episode
+        obs, _ = env.reset(seed=collect_seed)
         done = False
         total_reward = 0.0
         n_steps = 0

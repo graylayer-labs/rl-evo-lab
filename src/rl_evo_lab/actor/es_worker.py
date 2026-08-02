@@ -58,7 +58,9 @@ def run_worker_episode(
     # Reset episodic novelty
     novelty.reset()
 
-    obs, _ = env.reset()
+    # Unique, reproducible seed per worker: derived from cfg.seed + noise_seed
+    worker_env_seed = cfg.seed + noise_seed
+    obs, _ = env.reset(seed=worker_env_seed)
     done = False
 
     fitness = 0.0

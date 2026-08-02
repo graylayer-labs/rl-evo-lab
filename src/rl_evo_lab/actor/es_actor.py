@@ -155,10 +155,13 @@ class ESActor:
         Seeds use a constant stride (cfg.es_n_workers) to ensure they never collide
         across generations even as eff_n_workers decays. This guarantees each episode's
         seed block is disjoint.
+
+        The base incorporates cfg.seed so different runs have different ES trajectories.
         """
         cfg = self.cfg
         stride = cfg.es_n_workers  # constant max stride — seeds scale with this, not eff_n_workers
-        base = episode_num * stride
+        # Fold cfg.seed into base: different seeds → different ES trajectories (reproducible)
+        base = (cfg.seed + episode_num) * stride
 
         jobs: list[tuple[int, int]] = []
         if cfg.es_antithetic:
