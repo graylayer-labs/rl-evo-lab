@@ -133,8 +133,15 @@ class ESActor:
             self.cfg.es_n_workers + progress * (self.cfg.es_workers_min - self.cfg.es_n_workers)
         )
         n = max(self.cfg.es_workers_min, n)
-        if self.cfg.es_antithetic and n % 2 != 0:
-            n = max(self.cfg.es_workers_min, n - 1)
+
+        # Ensure n is even when antithetic sampling is enabled
+        if self.cfg.es_antithetic:
+            if n % 2 != 0:
+                # If we would drop below min by rounding down, round up instead
+                if n - 1 < self.cfg.es_workers_min:
+                    n = n + 1
+                else:
+                    n = n - 1
         return n
 
     def update_learner_eval(self, reward: float) -> None:

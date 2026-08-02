@@ -53,7 +53,7 @@ def test_train_logs_compute_metrics():
 
             for line in lines:
                 parts = line.strip().split(",")
-                row = dict(zip(columns, parts))
+                row = dict(zip(columns, parts, strict=True))
 
                 # Every row should have total_env_steps
                 assert row["total_env_steps"], f"total_env_steps missing in row: {row}"

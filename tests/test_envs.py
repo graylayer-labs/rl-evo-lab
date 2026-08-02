@@ -106,12 +106,9 @@ def test_cartpole_tough_wrapper_truncation_flag():
     obs, _ = wrapper.reset(seed=42)
 
     # Run steps while staying in bounds (no angle/position violation)
-    done = False
-    step_count = 0
-    for _ in range(1001):  # Go past max_steps
+    for step_count in range(1001):  # Go past max_steps
         action = 1 if obs[2] > 0 else 0  # Action to stabilize pole
         obs, reward, terminated, truncated, _ = wrapper.step(action)
-        step_count += 1
 
         if step_count == 1000:
             # At max_steps, should have truncated=True, terminated=False

@@ -291,7 +291,7 @@ def compare(
 # ---------------------------------------------------------------------------
 
 
-def _make_registry() -> dict[str, dict[str, "Experiment"]]:
+def _make_registry() -> dict[str, dict[str, Experiment]]:
     """Build the experiment registry lazily to avoid import cycles."""
     from rl_evo_lab.experiment import Condition, Experiment
 
