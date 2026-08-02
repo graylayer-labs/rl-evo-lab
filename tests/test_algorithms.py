@@ -187,7 +187,7 @@ class TestIDNLearning:
 
         initial_loss = None
         for step in range(50):
-            loss = idn.train_step(obs_samples, next_obs_samples, action_samples)
+            loss = idn.update(obs_samples, next_obs_samples, action_samples)
             if step == 0:
                 initial_loss = loss
 
@@ -208,16 +208,16 @@ class TestNoveltyRamp:
 
         # Check beta at different episodes
         beta_ep0 = actor._effective_beta(0)
-        beta_ep50 = actor._effective_beta(50)  # warmup ends
+        beta_ep51 = actor._effective_beta(51)  # first post-warmup episode
         beta_ep100 = actor._effective_beta(100)  # ramp ends
         beta_ep200 = actor._effective_beta(200)  # post-ramp
 
         assert beta_ep0 == 0.0, f"Beta should be 0 during warmup, got {beta_ep0}"
-        assert 0 < beta_ep50 < cfg.beta, f"Beta should ramp after warmup, got {beta_ep50}"
+        assert 0 < beta_ep51 < cfg.beta, f"Beta should ramp after warmup, got {beta_ep51}"
         assert np.isclose(beta_ep100, cfg.beta), f"Beta should reach target at ramp end, got {beta_ep100}"
         assert np.isclose(beta_ep200, cfg.beta), f"Beta should hold after ramp, got {beta_ep200}"
 
-        print(f"✓ Novelty ramp: 0→{beta_ep50:.4f}→{beta_ep100:.4f}→{beta_ep200:.4f}")
+        print(f"✓ Novelty ramp: 0→{beta_ep51:.4f}→{beta_ep100:.4f}→{beta_ep200:.4f}")
 
 
 class TestConfigOverrides:
@@ -228,7 +228,7 @@ class TestConfigOverrides:
         cfg1 = make_config("cartpole")
         cfg2 = make_config("cartpole", es_sigma=0.2)
 
-        assert cfg1.es_sigma == 0.06  # default
+        assert cfg1.es_sigma == 0.1  # cartpole preset
         assert cfg2.es_sigma == 0.2   # overridden
         print(f"✓ es_sigma override: {cfg1.es_sigma} → {cfg2.es_sigma}")
 
@@ -237,7 +237,7 @@ class TestConfigOverrides:
         cfg1 = make_config("cartpole")
         cfg2 = make_config("cartpole", beta=0.2)
 
-        assert cfg1.beta == 0.02  # default
+        assert cfg1.beta == 0.1  # cartpole preset
         assert cfg2.beta == 0.2   # overridden
         print(f"✓ beta override: {cfg1.beta} → {cfg2.beta}")
 
@@ -245,12 +245,12 @@ class TestConfigOverrides:
         """Should be able to override novelty_ramp_episodes."""
         cfg1 = make_config("cartpole")
         cfg2 = make_config("cartpole", novelty_ramp_episodes=0)
-        cfg3 = make_config("cartpole", novelty_ramp_episodes=200)
+        cfg3 = make_config("cartpole", novelty_ramp_episodes=300)
 
-        assert cfg1.novelty_ramp_episodes == 100  # default
+        assert cfg1.novelty_ramp_episodes == 200  # cartpole preset
         assert cfg2.novelty_ramp_episodes == 0    # disabled
-        assert cfg3.novelty_ramp_episodes == 200  # delayed
-        print(f"✓ novelty_ramp override: {cfg1.novelty_ramp_episodes} → 0 / 200")
+        assert cfg3.novelty_ramp_episodes == 300  # delayed
+        print(f"✓ novelty_ramp override: {cfg1.novelty_ramp_episodes} → 0 / 300")
 
 
 class TestBufferIntegrity:
