@@ -50,16 +50,19 @@ def check_idn_convergence(run_dir: str) -> dict:
             max_loss = max(idn_losses)
             decay = (start - end) / start if start > 0 else 0
 
-            results[condition].append({
-                "run": run_name,
-                "start_loss": start,
-                "end_loss": end,
-                "min_loss": min_loss,
-                "decay_pct": decay * 100,
-                "n_episodes": len(idn_losses),
-            })
+            results[condition].append(
+                {
+                    "run": run_name,
+                    "start_loss": start,
+                    "end_loss": end,
+                    "min_loss": min_loss,
+                    "decay_pct": decay * 100,
+                    "n_episodes": len(idn_losses),
+                }
+            )
 
     return results
+
 
 print("╔════════════════════════════════════════════════════════════════╗")
 print("║              IDN LEARNING DIAGNOSTIC                          ║")
@@ -87,17 +90,17 @@ for exp in ["cartpole_normal", "lunarlander_normal"]:
             print(f"start={run['start_loss']:7.4f} end={run['end_loss']:7.4f} ", end="")
             print(f"decay={run['decay_pct']:5.1f}% ", end="")
 
-            if run['decay_pct'] > 50:
+            if run["decay_pct"] > 50:
                 print("✓ LEARNING")
-            elif run['decay_pct'] > 20:
+            elif run["decay_pct"] > 20:
                 print("⚠ SLOW")
             else:
                 print("✗ NOT LEARNING")
 
         # Summary
-        avg_start = sum(r['start_loss'] for r in runs) / len(runs)
-        avg_end = sum(r['end_loss'] for r in runs) / len(runs)
-        avg_decay = sum(r['decay_pct'] for r in runs) / len(runs)
+        avg_start = sum(r["start_loss"] for r in runs) / len(runs)
+        avg_end = sum(r["end_loss"] for r in runs) / len(runs)
+        avg_decay = sum(r["decay_pct"] for r in runs) / len(runs)
 
         print(f"  Average: start={avg_start:.4f} → end={avg_end:.4f} (decay {avg_decay:.1f}%)")
 

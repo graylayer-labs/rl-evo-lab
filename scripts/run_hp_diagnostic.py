@@ -61,14 +61,15 @@ def run_diagnostic(env: str, episodes: int = 50, force: bool = False) -> dict:
 
         # Read final metrics
         import csv
+
         metrics_file = list(run_dir.glob("*/metrics.csv"))
         if metrics_file:
             with open(metrics_file[0]) as f:
                 rows = list(csv.DictReader(f))
                 if rows:
                     final = rows[-1]
-                    learner_reward = float(final.get('learner_eval_reward', 0))
-                    idn_loss = float(final.get('idn_loss', 0))
+                    learner_reward = float(final.get("learner_eval_reward", 0))
+                    idn_loss = float(final.get("idn_loss", 0))
                     print(f"\n   Final learner reward: {learner_reward:.1f}")
                     print(f"   Final IDN loss:      {idn_loss:.4f}")
 
@@ -86,9 +87,7 @@ def run_diagnostic(env: str, episodes: int = 50, force: bool = False) -> dict:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Run quick HP diagnostic before full training"
-    )
+    parser = argparse.ArgumentParser(description="Run quick HP diagnostic before full training")
     parser.add_argument(
         "--env",
         required=True,

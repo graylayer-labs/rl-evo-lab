@@ -29,8 +29,13 @@ experiment = Experiment(
     seeds=[7, 42, 123],
     conditions=[
         Condition("EDER", use_es=True, use_novelty=True),
-        Condition("EDER-filtered", use_es=True, use_novelty=True,
-                  buffer_push_alpha=0.5, buffer_push_top_k=7),
+        Condition(
+            "EDER-filtered",
+            use_es=True,
+            use_novelty=True,
+            buffer_push_alpha=0.5,
+            buffer_push_top_k=7,
+        ),
         Condition("ES+DQN", use_es=True, use_novelty=False),
         Condition("DQN", use_es=False, use_novelty=False),
     ],

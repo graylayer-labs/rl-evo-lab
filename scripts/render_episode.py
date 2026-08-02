@@ -1,4 +1,5 @@
 """Render a trained policy as an animated GIF."""
+
 import argparse
 import json
 from pathlib import Path
@@ -72,14 +73,18 @@ def render_episode(run_dir: str, output_path: str | None = None, fps: int = 30) 
 
     if frames:
         imageio.mimsave(str(output_path), frames, fps=fps)
-        print(f"Saved GIF to {output_path} (episode reward: {total_reward:.1f}, {len(frames)} frames)")
+        print(
+            f"Saved GIF to {output_path} (episode reward: {total_reward:.1f}, {len(frames)} frames)"
+        )
     else:
         print("No frames rendered (environment did not return RGB data)")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Render a trained policy as a GIF")
-    parser.add_argument("run_dir", help="Path to the run directory (containing config.json and policy.pt)")
+    parser.add_argument(
+        "run_dir", help="Path to the run directory (containing config.json and policy.pt)"
+    )
     parser.add_argument("--output", help="Output GIF path (default: docs/img/<env>_solved.gif)")
     parser.add_argument("--fps", type=int, default=30, help="Frames per second")
     args = parser.parse_args()

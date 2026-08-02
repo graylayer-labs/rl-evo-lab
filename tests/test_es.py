@@ -293,8 +293,7 @@ def test_idn_baseline_captured_after_warmup():
     # (because CartPole episodes are rarely empty; we get transitions)
     if stats.idn_loss > 0.0:  # only check if IDN actually trained
         assert actor._idn_loss_init is not None, (
-            "IDN baseline should be captured at/after warmup episode. "
-            "Got _idn_loss_init=None."
+            "IDN baseline should be captured at/after warmup episode. Got _idn_loss_init=None."
         )
 
     # Continue to post-warmup: baseline should persist, not reset

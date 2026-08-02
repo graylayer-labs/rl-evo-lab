@@ -50,7 +50,9 @@ def train(
     )
 
     env_fn = lambda: make_env_with_config(cfg.env_id, cfg)
-    collect_env = make_env_with_config(cfg.env_id, cfg)  # used by DQN collect_episode when use_es=False
+    collect_env = make_env_with_config(
+        cfg.env_id, cfg
+    )  # used by DQN collect_episode when use_es=False
     eval_env = make_env_with_config(cfg.env_id, cfg)
 
     last_loss = 0.0

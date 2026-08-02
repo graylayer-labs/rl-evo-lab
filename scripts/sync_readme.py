@@ -63,7 +63,10 @@ def _experiment_metadata(path: Path) -> tuple[str, str, str]:
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id == "experiment":
                     call = node.value
-                    if isinstance(call, ast.Call) and getattr(call.func, "id", None) == "Experiment":
+                    if (
+                        isinstance(call, ast.Call)
+                        and getattr(call.func, "id", None) == "Experiment"
+                    ):
                         for keyword in call.keywords:
                             if keyword.arg == "env" and isinstance(keyword.value, ast.Constant):
                                 env_preset = keyword.value.value

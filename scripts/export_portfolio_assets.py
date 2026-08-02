@@ -58,9 +58,7 @@ def export_comparison_plot(exp_name: str, target_name: str | None = None) -> boo
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Export experiment results to portfolio directory"
-    )
+    parser = argparse.ArgumentParser(description="Export experiment results to portfolio directory")
     parser.add_argument(
         "--experiment",
         help="Export a single experiment (e.g., cartpole_normal)",

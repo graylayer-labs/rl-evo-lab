@@ -1,4 +1,5 @@
 """Environment wrappers for tough variants."""
+
 import gymnasium as gym
 import numpy as np
 
@@ -61,7 +62,11 @@ class LunarLanderToughWrapper(gym.Wrapper):
 
         # Apply random starting state
         unwrapped_env = self.env.unwrapped
-        state = np.array(unwrapped_env.state, dtype=np.float32) if hasattr(unwrapped_env, 'state') else obs.copy()
+        state = (
+            np.array(unwrapped_env.state, dtype=np.float32)
+            if hasattr(unwrapped_env, "state")
+            else obs.copy()
+        )
         # Random position perturbation
         state[0] += np.random.uniform(-0.3, 0.3)  # x position
         state[1] += np.random.uniform(-0.1, 0.1)  # y position
@@ -69,7 +74,7 @@ class LunarLanderToughWrapper(gym.Wrapper):
         state[2] += np.random.uniform(-0.5, 0.5)  # x velocity
         state[3] += np.random.uniform(-0.5, 0.5)  # y velocity
 
-        if hasattr(unwrapped_env, 'state'):
+        if hasattr(unwrapped_env, "state"):
             unwrapped_env.state = state
 
         # Return the modified state as observation
@@ -103,10 +108,10 @@ def make_env_with_config(env_id: str, cfg) -> gym.Env:
     env = gym.make(env_id, render_mode=None)
 
     # Apply tough variant wrappers based on config flags
-    if hasattr(cfg, '_tough') and cfg._tough:
-        if 'CartPole' in env_id:
+    if hasattr(cfg, "_tough") and cfg._tough:
+        if "CartPole" in env_id:
             env = CartPoleToughWrapper(env)
-        elif 'LunarLander' in env_id:
+        elif "LunarLander" in env_id:
             env = LunarLanderToughWrapper(env)
 
     return env

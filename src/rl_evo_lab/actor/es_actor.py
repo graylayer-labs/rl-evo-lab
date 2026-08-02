@@ -33,7 +33,9 @@ def _rank_normalize(fitnesses: np.ndarray) -> np.ndarray:
     if n == 0:
         return np.empty(0, dtype=np.float32)
     # Use np.unique to assign dense ranks: tied fitnesses get the same rank
-    uniques, inverse = np.unique(fitnesses, return_inverse=True)  # inverse gives dense rank per element
+    uniques, inverse = np.unique(
+        fitnesses, return_inverse=True
+    )  # inverse gives dense rank per element
     n_unique = len(uniques)
     if n_unique == 1:
         # All identical fitnesses → all ranks are 0

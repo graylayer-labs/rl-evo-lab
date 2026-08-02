@@ -1,6 +1,5 @@
 """Unit tests for core algorithm implementations."""
 
-
 import numpy as np
 import pytest
 import torch
@@ -48,13 +47,17 @@ class TestRankNormalize:
         ranks = _rank_normalize(fitnesses)
 
         # The two 5.0s should have identical ranks
-        assert ranks[0] == ranks[1], f"Tied fitnesses should have equal ranks: {ranks[0]} vs {ranks[1]}"
+        assert ranks[0] == ranks[1], (
+            f"Tied fitnesses should have equal ranks: {ranks[0]} vs {ranks[1]}"
+        )
         # min rank (worst) is 1.0 at -0.5
         assert np.isclose(ranks[3], -0.5), f"Min fitness should have rank -0.5, got {ranks[3]}"
         # max rank (best) is 10.0 at +0.5
         assert np.isclose(ranks[2], 0.5), f"Max fitness should have rank 0.5, got {ranks[2]}"
         # The tied 5.0s should be in the middle (0.0)
-        assert np.isclose(ranks[0], 0.0), f"Tied middle fitness should have rank 0.0, got {ranks[0]}"
+        assert np.isclose(ranks[0], 0.0), (
+            f"Tied middle fitness should have rank 0.0, got {ranks[0]}"
+        )
 
     def test_rank_normalize_many_ties(self):
         """CartPole reward ceiling: all workers at max fitness should get same rank (0.0)."""
@@ -79,6 +82,7 @@ class TestTruncationBootstrap:
 
         # Create a mock environment that terminates instantly
         import gymnasium as gym
+
         env = gym.make("CartPole-v1")
         env = gym.wrappers.TimeLimit(env, max_episode_steps=1)  # Force truncate at step 1
 
@@ -103,6 +107,7 @@ class TestTruncationBootstrap:
         buffer = ReplayBuffer(cfg.buffer_capacity, cfg.obs_dim)
 
         import gymnasium as gym
+
         env = gym.make("CartPole-v1")
         # Remove time limit to allow true termination (pole falls)
         env = gym.wrappers.TimeLimit(env, max_episode_steps=10000)
@@ -153,14 +158,17 @@ class TestDoubleQN:
 
         # Mock batch
         from collections import namedtuple
-        Batch = namedtuple('Batch', ['obs', 'action', 'reward', 'next_obs', 'done'])
+
+        Batch = namedtuple("Batch", ["obs", "action", "reward", "next_obs", "done"])
         batch = Batch(obs=obs, action=actions, reward=rewards, next_obs=next_obs, done=dones)
 
         # Compute Q-targets manually
         with torch.no_grad():
             # Double DQN: policy_net selects, target_net evaluates
             next_actions = learner.policy_net(next_obs).argmax(dim=1)
-            next_q_values = learner.target_net(next_obs).gather(1, next_actions.unsqueeze(1)).squeeze(1)
+            next_q_values = (
+                learner.target_net(next_obs).gather(1, next_actions.unsqueeze(1)).squeeze(1)
+            )
 
             # Standard DQN (for comparison): target_net selects AND evaluates
             next_q_std = learner.target_net(next_obs).max(dim=1).values
@@ -201,7 +209,9 @@ class TestNoveltyRamp:
 
     def test_beta_ramp_schedule(self):
         """Beta should increase from 0 to target over novelty_ramp_episodes."""
-        cfg = make_config("cartpole", novelty_warmup_episodes=50, novelty_ramp_episodes=100, beta=0.1)
+        cfg = make_config(
+            "cartpole", novelty_warmup_episodes=50, novelty_ramp_episodes=100, beta=0.1
+        )
         device = torch.device("cpu")
 
         actor = ESActor(cfg, device)
@@ -214,7 +224,9 @@ class TestNoveltyRamp:
 
         assert beta_ep0 == 0.0, f"Beta should be 0 during warmup, got {beta_ep0}"
         assert 0 < beta_ep51 < cfg.beta, f"Beta should ramp after warmup, got {beta_ep51}"
-        assert np.isclose(beta_ep100, cfg.beta), f"Beta should reach target at ramp end, got {beta_ep100}"
+        assert np.isclose(beta_ep100, cfg.beta), (
+            f"Beta should reach target at ramp end, got {beta_ep100}"
+        )
         assert np.isclose(beta_ep200, cfg.beta), f"Beta should hold after ramp, got {beta_ep200}"
 
         print(f"✓ Novelty ramp: 0→{beta_ep51:.4f}→{beta_ep100:.4f}→{beta_ep200:.4f}")
@@ -229,7 +241,7 @@ class TestConfigOverrides:
         cfg2 = make_config("cartpole", es_sigma=0.2)
 
         assert cfg1.es_sigma == 0.1  # cartpole preset
-        assert cfg2.es_sigma == 0.2   # overridden
+        assert cfg2.es_sigma == 0.2  # overridden
         print(f"✓ es_sigma override: {cfg1.es_sigma} → {cfg2.es_sigma}")
 
     def test_beta_override(self):
@@ -238,7 +250,7 @@ class TestConfigOverrides:
         cfg2 = make_config("cartpole", beta=0.2)
 
         assert cfg1.beta == 0.1  # cartpole preset
-        assert cfg2.beta == 0.2   # overridden
+        assert cfg2.beta == 0.2  # overridden
         print(f"✓ beta override: {cfg1.beta} → {cfg2.beta}")
 
     def test_novelty_ramp_override(self):
@@ -248,7 +260,7 @@ class TestConfigOverrides:
         cfg3 = make_config("cartpole", novelty_ramp_episodes=300)
 
         assert cfg1.novelty_ramp_episodes == 200  # cartpole preset
-        assert cfg2.novelty_ramp_episodes == 0    # disabled
+        assert cfg2.novelty_ramp_episodes == 0  # disabled
         assert cfg3.novelty_ramp_episodes == 300  # delayed
         print(f"✓ novelty_ramp override: {cfg1.novelty_ramp_episodes} → 0 / 300")
 
