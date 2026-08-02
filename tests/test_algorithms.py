@@ -195,7 +195,7 @@ class TestIDNLearning:
 
         initial_loss = None
         for step in range(50):
-            loss = idn.update(obs_samples, next_obs_samples, action_samples)
+            loss = idn.update(obs_samples, next_obs_samples, action_samples, n_steps=1)
             if step == 0:
                 initial_loss = loss
 
@@ -219,17 +219,17 @@ class TestNoveltyRamp:
         # Check beta at different episodes
         beta_ep0 = actor._effective_beta(0)
         beta_ep51 = actor._effective_beta(51)  # first post-warmup episode
-        beta_ep100 = actor._effective_beta(100)  # ramp ends
+        beta_ep150 = actor._effective_beta(150)  # ramp ends (50 + 100)
         beta_ep200 = actor._effective_beta(200)  # post-ramp
 
         assert beta_ep0 == 0.0, f"Beta should be 0 during warmup, got {beta_ep0}"
         assert 0 < beta_ep51 < cfg.beta, f"Beta should ramp after warmup, got {beta_ep51}"
-        assert np.isclose(beta_ep100, cfg.beta), (
-            f"Beta should reach target at ramp end, got {beta_ep100}"
+        assert np.isclose(beta_ep150, cfg.beta), (
+            f"Beta should reach target at ramp end, got {beta_ep150}"
         )
         assert np.isclose(beta_ep200, cfg.beta), f"Beta should hold after ramp, got {beta_ep200}"
 
-        print(f"✓ Novelty ramp: 0→{beta_ep51:.4f}→{beta_ep100:.4f}→{beta_ep200:.4f}")
+        print(f"✓ Novelty ramp: 0→{beta_ep51:.4f}→{beta_ep150:.4f}→{beta_ep200:.4f}")
 
 
 class TestConfigOverrides:
