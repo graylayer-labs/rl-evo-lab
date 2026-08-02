@@ -331,11 +331,14 @@ This section is generated from the files in `experiments/`.
 | Script | Environment | Question |
 |---|---|---|
 | `acrobot_exploration.py` | Acrobot-v1 | Does EDER shine on hard exploration? Acrobot-v1 trial. |
+| `cartpole_beta_diagnostic.py` | CartPole-v1 | CartPole-v1 Beta Diagnostic: Find optimal novelty weight. |
 | `cartpole_eder_vs_baseline.py` | CartPole-v1 | Isolated novelty ablation: does IDN novelty help the ES actor? |
 | `cartpole_efficiency.py` | CartPole-v1 | Does the ES actor improve sample efficiency vs pure DQN on CartPole? |
 | `cartpole_model_size.py` | CartPole-v1 | Does ES diversity compensate for a smaller network? |
 | `cartpole_normal.py` | CartPole-v1 | CartPole-v1 Normal: Standard benchmark to validate baseline performance. |
+| `cartpole_novelty_ramp_diagnostic.py` | CartPole-v1 | CartPole Novelty Ramp Diagnostic: Quick 100-episode tests to identify ramp issue. |
 | `cartpole_sample_efficiency.py` | CartPole-v1 | Fair sample efficiency comparison: equal env-step budget across conditions. |
+| `cartpole_sigma_sweep.py` | CartPole-v1 | CartPole-v1 Normal: Diagnostic sweep for optimal es_sigma. |
 | `cartpole_tough.py` | CartPole-v1 | CartPole-Tough: Real robustness test for learned control. |
 | `lunarlander_efficiency.py` | LunarLander-v3 | Does EDER generalise to LunarLander, and does the buffer filter fix forgetting? |
 | `lunarlander_normal.py` | LunarLander-v3 | LunarLander-v3 Normal: Standard benchmark on longer-horizon task. |

@@ -5,7 +5,6 @@ from pathlib import Path
 
 import gymnasium as gym
 import imageio
-import numpy as np
 import torch
 
 from rl_evo_lab.learner.network import QNetwork

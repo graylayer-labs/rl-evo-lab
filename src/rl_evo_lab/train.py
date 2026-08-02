@@ -3,7 +3,6 @@ from __future__ import annotations
 from multiprocessing import Queue
 from pathlib import Path
 
-import gymnasium as gym
 import torch
 
 from rl_evo_lab.actor.es_actor import ESActor

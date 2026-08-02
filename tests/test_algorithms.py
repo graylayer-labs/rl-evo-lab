@@ -1,15 +1,15 @@
 """Unit tests for core algorithm implementations."""
 
+
 import numpy as np
-import torch
 import pytest
-from pathlib import Path
+import torch
 
 from rl_evo_lab.actor.es_actor import ESActor, _rank_normalize
-from rl_evo_lab.learner.dqn import DQNLearner
 from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
-from rl_evo_lab.utils.config import make_config
 from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
+from rl_evo_lab.learner.dqn import DQNLearner
+from rl_evo_lab.utils.config import make_config
 
 
 class TestRankNormalize:
@@ -168,7 +168,7 @@ class TestDoubleQN:
         # They should be DIFFERENT if policy_net and target_net diverge
         # (they might be similar at init, but principle is correct)
         assert next_q_values.shape == next_q_std.shape
-        print(f"✓ Double DQN structure correct: policy_net selects, target_net evaluates")
+        print("✓ Double DQN structure correct: policy_net selects, target_net evaluates")
 
 
 class TestIDNLearning:
@@ -278,7 +278,7 @@ class TestBufferIntegrity:
         assert np.allclose(batch.obs.numpy()[0], obs)
         assert np.allclose(batch.reward.numpy()[0], reward)
 
-        print(f"✓ Buffer integrity: push/pop correct")
+        print("✓ Buffer integrity: push/pop correct")
 
 
 if __name__ == "__main__":

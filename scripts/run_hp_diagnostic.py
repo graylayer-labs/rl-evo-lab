@@ -15,8 +15,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from rl_evo_lab.utils.config import make_config, ENV_CATEGORIES, ENV_PRESETS
 from rl_evo_lab.train import train
+from rl_evo_lab.utils.config import ENV_CATEGORIES, ENV_PRESETS, make_config
 
 
 def run_diagnostic(env: str, episodes: int = 50, force: bool = False) -> dict:
@@ -33,14 +33,14 @@ def run_diagnostic(env: str, episodes: int = 50, force: bool = False) -> dict:
     category = preset.get("category", "unknown")
     category_info = ENV_CATEGORIES.get(category, {})
 
-    print(f"\n╔════════════════════════════════════════════════════════════╗")
+    print("\n╔════════════════════════════════════════════════════════════╗")
     print(f"║          HP DIAGNOSTIC: {env:25s}         ║")
-    print(f"╚════════════════════════════════════════════════════════════╝\n")
+    print("╚════════════════════════════════════════════════════════════╝\n")
 
     print(f"Category:  {category}")
     print(f"  {category_info.get('description', 'N/A')}\n")
 
-    print(f"HPs from category defaults:")
+    print("HPs from category defaults:")
     print(f"  es_sigma:              {preset.get('es_sigma', 0.06)}")
     print(f"  beta (novelty):        {preset.get('beta', 0.02)}")
     print(f"  novelty_ramp_episodes: {preset.get('novelty_ramp_episodes', 100)}\n")
@@ -56,7 +56,7 @@ def run_diagnostic(env: str, episodes: int = 50, force: bool = False) -> dict:
 
     try:
         train(cfg, verbose=False, log_dir="runs", run_dir=run_dir)
-        print(f"\n✅ Diagnostic completed successfully")
+        print("\n✅ Diagnostic completed successfully")
         print(f"   Results saved to: {run_dir}")
 
         # Read final metrics
@@ -74,9 +74,9 @@ def run_diagnostic(env: str, episodes: int = 50, force: bool = False) -> dict:
 
                     # Quick sanity checks
                     if learner_reward < 0:
-                        print(f"\n⚠️  WARNING: Negative final reward suggests instability")
+                        print("\n⚠️  WARNING: Negative final reward suggests instability")
                     if idn_loss > 0.5:
-                        print(f"\n⚠️  WARNING: High IDN loss suggests poor embeddings")
+                        print("\n⚠️  WARNING: High IDN loss suggests poor embeddings")
 
         return {"status": "ok", "reward": learner_reward}
 

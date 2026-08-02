@@ -2335,28 +2335,6 @@ pygments = ">=2.13.0,<3.0.0"
 jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
-name = "rl-core"
-version = "0.1.0"
-description = "Shared infrastructure for reinforcement learning research"
-optional = false
-python-versions = ">=3.12"
-groups = ["main"]
-files = []
-develop = false
-
-[package.dependencies]
-numpy = ">=1.26"
-pyyaml = ">=6.0"
-torch = ">=2.0"
-wandb = ">=0.15"
-
-[package.source]
-type = "git"
-url = "https://github.com/eoin-james/rl-core.git"
-reference = "v0.2.0"
-resolved_reference = "3da9fe4d73289fae4d171901b82e3f573d2e200a"
-
-[[package]]
 name = "ruff"
 version = "0.15.8"
 description = "An extremely fast Python linter and code formatter, written in Rust."
@@ -2783,4 +2761,4 @@ viz = ["imageio"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "afe8df828d3ceccc8803b8806706fbe06c295f17de01122a6595e5dd188192a5"
+content-hash = "96c3e01963de00e0e49a5004c140ee652117a42132d66fe0e5d1ef45d563707c"

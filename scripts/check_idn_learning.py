@@ -2,9 +2,9 @@
 """Diagnostic: Check if IDN is actually learning from existing runs."""
 
 import csv
-import os
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
+
 
 def check_idn_convergence(run_dir: str) -> dict:
     """Check IDN loss decay across an experiment."""

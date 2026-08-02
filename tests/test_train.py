@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from rl_evo_lab.train import train, _compute_sync_threshold
+from rl_evo_lab.train import _compute_sync_threshold, train
 from rl_evo_lab.utils.config import EDERConfig
 
 

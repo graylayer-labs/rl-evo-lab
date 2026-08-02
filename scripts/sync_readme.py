@@ -6,7 +6,6 @@ import sys
 from dataclasses import fields
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 EXPERIMENTS_DIR = ROOT / "experiments"
@@ -14,8 +13,7 @@ SRC_DIR = ROOT / "src"
 
 sys.path.insert(0, str(SRC_DIR))
 
-from rl_evo_lab.utils.config import EDERConfig, ENV_PRESETS  # noqa: E402
-
+from rl_evo_lab.utils.config import ENV_PRESETS, EDERConfig  # noqa: E402
 
 EXPERIMENTS_BEGIN = "<!-- BEGIN AUTO:EXPERIMENTS -->"
 EXPERIMENTS_END = "<!-- END AUTO:EXPERIMENTS -->"
