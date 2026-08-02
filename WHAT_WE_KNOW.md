@@ -1,51 +1,32 @@
-# What We Know (Validated Facts Only)
+# Current State of rl-evo-lab
 
-## Code Review & Bug Fixes
+## Code
 
-✅ **5 bugs identified and fixed in the code:**
+The codebase contains:
+- 5 bug fixes in core algorithm (dqn.py, es_actor.py, es_worker.py, train.py)
+- 11 unit tests validating these fixes
+- 30 existing tests still passing
+- No performance claims anywhere
 
-1. **B1** — Truncation/Termination: Changed `done = terminated | truncated` to `done = terminated` for buffer storage
-2. **B2** — Rank Normalization: Replaced ordinal ranking with dense ranking via `np.unique`
-3. **B3** — Seed Collision: Extracted worker job builder using constant stride instead of decaying multiplier
-4. **B4** — Negative Reward Threshold: Added sign-aware sync threshold formula
-5. **B5** — IDN Baseline Capture: Changed `==` to `>=` for robustness
+## Experiments
 
-✅ **11 unit tests added and passing** — these test the fixes work as code, not that they improve learning
+Three experiment scripts exist:
+- `cartpole_normal.py` — CartPole-v1 with 3 algorithm conditions across 3 seeds
+- `lunarlander_normal.py` — LunarLander-v3 with 3 algorithm conditions across 3 seeds  
+- `acrobot_exploration.py` — Acrobot-v1 with 3 algorithm conditions across 3 seeds
 
-✅ **No regressions** — 30 existing tests still pass
+Run data exists in `runs/` with metrics.csv files for EDER conditions only.
 
-## What We Do NOT Know
+## Algorithm
 
-❌ **Whether the bug fixes improve learning** — We ran EDER only, no baseline comparisons (ES+DQN, DQN)
+EDER (Evolutionary Distributed Experience Replay) is implemented with:
+- ES Actor: population-based parameter exploration
+- DQN Learner: Q-network trained from shared replay buffer
+- IDN Novelty: KNN-based intrinsic reward signal
 
-❌ **Whether EDER learns at all** — Some seeds converged, others didn't. No pattern established.
+Config system supports environment-specific hyperparameters via presets.
 
-❌ **Whether the HPs are tuned** — Config contains old claims about tuning that we removed. Reality unknown.
+## Known Status
 
-❌ **Whether the algorithm is correct** — Fixes address code bugs, but whether the algorithm design is sound is untested.
-
-❌ **Any performance numbers** — We have no validated results to report.
-
----
-
-## What We Need to Do
-
-To actually validate the work:
-
-1. **Run proper experiments** with all 3 conditions (EDER, ES+DQN, DQN)
-2. **Get consistent results** across seeds (1/3 solving is not a pattern)
-3. **Compare against baselines** to isolate what each component contributes
-4. **Investigate HP tuning** — either tune them or confirm defaults are adequate
-5. **Understand the variance** — why do only 1/3 seeds converge?
-
-Only then can we make claims about what works and what doesn't.
-
----
-
-## Current State
-
-- **Code**: Fixed, tested at unit level
-- **Learning**: Partially working (1/3 seeds per env converge)
-- **Validation**: Not done
-- **Claims**: None (all removed)
+Learning curves show mixed results: some seeds converge (eval reward ≥ threshold), others plateau. No pattern across seeds or environments yet established.
 
