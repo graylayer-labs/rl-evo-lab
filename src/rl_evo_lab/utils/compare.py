@@ -15,12 +15,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from rl_evo_lab.utils.config import ENV_PRESETS
+
+if TYPE_CHECKING:
+    from rl_evo_lab.experiment import Experiment
 
 # ---------------------------------------------------------------------------
 # Plot config

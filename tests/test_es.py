@@ -341,3 +341,99 @@ def test_idn_beta_uses_baseline():
     assert beta_with_good_idn > 0.0, (
         f"With baseline set and ramp phase, beta should be > 0. Got {beta_with_good_idn}"
     )
+
+
+def test_effective_n_workers_always_even_with_antithetic():
+    """Test that _effective_n_workers returns even when antithetic sampling is enabled."""
+    from rl_evo_lab.utils.config import make_config
+
+    # Test with antithetic enabled
+    cfg = make_config("cartpole", es_antithetic=True, es_n_workers=50, es_workers_min=4)
+    device = torch.device("cpu")
+    actor = ESActor(cfg, device)
+
+    # Test at various convergence stages
+    for progress in [0.0, 0.5, 0.9, 1.0]:
+        # Simulate convergence progress by setting learner eval
+        if progress == 0.0:
+            actor._learner_eval = cfg.novelty_decay_start_reward - 10
+        elif progress == 1.0:
+            actor._learner_eval = cfg.solved_reward + 10
+        else:
+            actor._learner_eval = (
+                cfg.novelty_decay_start_reward +
+                progress * (cfg.solved_reward - cfg.novelty_decay_start_reward)
+            )
+
+        n_workers = actor._effective_n_workers()
+        assert n_workers % 2 == 0, (
+            f"With antithetic=True and progress={progress}, "
+            f"n_workers should be even. Got {n_workers}"
+        )
+        assert n_workers >= cfg.es_workers_min, (
+            f"n_workers should be >= es_workers_min ({cfg.es_workers_min}). Got {n_workers}"
+        )
+
+
+def test_effective_n_workers_odd_minimum_handled():
+    """Test that odd es_workers_min is handled correctly when antithetic is enabled."""
+    from rl_evo_lab.utils.config import make_config
+
+    # Even though default es_workers_min is 4, test with odd minimum
+    cfg = make_config("cartpole", es_antithetic=True, es_n_workers=50, es_workers_min=5)
+    device = torch.device("cpu")
+    actor = ESActor(cfg, device)
+
+    # Converge fully to force n to reach es_workers_min
+    actor._learner_eval = cfg.solved_reward + 10
+
+    n_workers = actor._effective_n_workers()
+    # Should be even, and >= 5 (if es_workers_min is 5, should bump to 6)
+    assert n_workers % 2 == 0, (
+        f"With antithetic=True and odd es_workers_min, "
+        f"n_workers should be even. Got {n_workers}"
+    )
+    # Since es_workers_min is 5 (odd) and we need even, should be 6
+    assert n_workers >= cfg.es_workers_min, (
+        f"n_workers should be >= es_workers_min ({cfg.es_workers_min}). Got {n_workers}"
+    )
+
+
+def test_effective_n_workers_decays_correctly():
+    """Test that n_workers decays smoothly from es_n_workers to es_workers_min."""
+    from rl_evo_lab.utils.config import make_config
+
+    cfg = make_config("cartpole", es_antithetic=True, es_n_workers=50, es_workers_min=4)
+    device = torch.device("cpu")
+    actor = ESActor(cfg, device)
+
+    # Test decay at various progress stages
+    n_start = 0
+    n_prev = None
+
+    for progress in [0.0, 0.25, 0.5, 0.75, 1.0]:
+        # Simulate convergence progress
+        if progress == 0.0:
+            actor._learner_eval = cfg.novelty_decay_start_reward - 10
+        else:
+            actor._learner_eval = (
+                cfg.novelty_decay_start_reward +
+                progress * (cfg.solved_reward - cfg.novelty_decay_start_reward)
+            )
+
+        n_workers = actor._effective_n_workers()
+        if n_start == 0:
+            n_start = n_workers
+        if n_prev is not None:
+            # n_workers should decay (weakly) as progress increases
+            assert n_workers <= n_prev + 1, (
+                f"n_workers should decay monotonically. "
+                f"At progress {progress}: got {n_workers}, was {n_prev}"
+            )
+        n_prev = n_workers
+
+    # Should end near es_workers_min
+    assert n_prev >= cfg.es_workers_min and n_prev <= cfg.es_workers_min + 1, (
+        f"At full convergence, n_workers should be near es_workers_min. "
+        f"Got {n_prev}, expected around {cfg.es_workers_min}"
+    )
