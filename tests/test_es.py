@@ -102,7 +102,8 @@ def test_es_actor_updates_params():
 
     initial_params = actor.get_base_params().copy()
 
-    env_fn = lambda: gym.make("CartPole-v1")
+    def env_fn():
+        return gym.make("CartPole-v1")
     stats = actor.run_generation(env_fn, idn, buffer, episode_num=0)
 
     updated_params = actor.get_base_params()
@@ -241,7 +242,7 @@ def test_seed_collision_free_under_decay():
 
     # Verify no seed collisions ACROSS EPISODES (disjoint ranges)
     all_episode_seeds = []
-    for ep, seeds in episode_seed_ranges.items():
+    for _ep, seeds in episode_seed_ranges.items():
         all_episode_seeds.extend(seeds)
 
     # Check: all unique seeds across episodes should be unique
@@ -283,7 +284,8 @@ def test_idn_baseline_captured_after_warmup():
     idn = InverseDynamicsNetwork(cfg, device)
     buffer = ReplayBuffer(cfg.buffer_capacity, cfg.obs_dim)
 
-    env_fn = lambda: gym.make("CartPole-v1")
+    def env_fn():
+        return gym.make("CartPole-v1")
 
     # Run a generation at the boundary episode (episode 2 = warmup_episodes - 1)
     # This should trigger baseline capture (or at least be ready to capture on next non-empty episode)
@@ -298,7 +300,7 @@ def test_idn_baseline_captured_after_warmup():
 
     # Continue to post-warmup: baseline should persist, not reset
     initial_baseline = actor._idn_loss_init
-    stats2 = actor.run_generation(env_fn, idn, buffer, episode_num=3)
+    actor.run_generation(env_fn, idn, buffer, episode_num=3)
     assert actor._idn_loss_init == initial_baseline, (
         "Baseline should not change after first capture"
     )

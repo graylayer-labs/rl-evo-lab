@@ -23,7 +23,7 @@ def test_overflow():
 
 def test_diversity_metric():
     buf = ReplayBuffer(capacity=100, obs_dim=4)
-    for i in range(50):
+    for _i in range(50):
         buf.push(np.random.randn(4), 0, 1.0, np.random.randn(4), False)
     d = buf.diversity_metric()
     assert isinstance(d, float)

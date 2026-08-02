@@ -46,8 +46,9 @@ class CartPoleToughWrapper(gym.Wrapper):
         # Custom termination: stricter angle or max steps
         if abs(obs[2]) > self.angle_limit or abs(obs[0]) > self.position_limit:
             terminated = True
-        if self.step_count >= self.max_steps:
-            truncated = False  # Reaching max steps is NOT failure, counts as success
+        elif self.step_count >= self.max_steps:
+            # Time-limit truncation (not a failure): episode ends but reward counts as success
+            truncated = True
             terminated = False
 
         return obs, reward, terminated, truncated, info
@@ -108,8 +109,9 @@ class LunarLanderToughWrapper(gym.Wrapper):
                 # Tight zone miss: penalize
                 reward = min(reward, -100.0)
 
-        if self.step_count >= self.max_steps:
-            truncated = False
+        elif self.step_count >= self.max_steps:
+            # Time-limit truncation (not a failure): episode ends but reward counts as success
+            truncated = True
             terminated = False
 
         return obs, reward, terminated, truncated, info

@@ -38,7 +38,7 @@ def check_idn_convergence(run_dir: str) -> dict:
         for row in rows:
             try:
                 loss = float(row.get("idn_loss", "nan"))
-                if not (loss != loss):  # not NaN
+                if loss == loss:  # not NaN
                     idn_losses.append(loss)
             except:
                 pass
@@ -47,7 +47,7 @@ def check_idn_convergence(run_dir: str) -> dict:
             start = idn_losses[0]
             end = idn_losses[-1]
             min_loss = min(idn_losses)
-            max_loss = max(idn_losses)
+            max(idn_losses)
             decay = (start - end) / start if start > 0 else 0
 
             results[condition].append(

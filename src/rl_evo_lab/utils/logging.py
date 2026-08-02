@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import time
 from dataclasses import asdict, dataclass, fields
 from multiprocessing import Queue
 from pathlib import Path
@@ -42,6 +43,7 @@ class EpisodeLog:
     idn_loss: float
     effective_beta: float
     buffer_size: int
+    wall_clock_seconds: float = 0.0  # elapsed wall-clock time since run start
     sync: bool = False
 
 
@@ -68,6 +70,10 @@ class RunLogger:
         self._write_config(run_dir)
         self._write_status("running")
         self._wandb = self._init_wandb() if cfg.use_wandb else None
+
+        # Track wall-clock time for compute summary
+        self._start_time = time.time()
+        self._last_total_env_steps = 0
 
         # If a queue is provided, send progress updates to the parent process.
         # Otherwise show a local progress bar when verbose=True.
@@ -114,6 +120,11 @@ class RunLogger:
             return None
 
     def log(self, entry: EpisodeLog) -> None:
+        # Update elapsed wall-clock time from run start
+        elapsed = time.time() - self._start_time
+        entry.wall_clock_seconds = elapsed
+        self._last_total_env_steps = entry.total_env_steps
+
         row = asdict(entry)
 
         # CSV
@@ -162,4 +173,18 @@ class RunLogger:
         self._csv_file.close()
         if self._wandb is not None:
             self._wandb.finish()
-        self._write_status("completed")
+
+        # Write compute summary to status.json
+        condition = (
+            "EDER"
+            if self.cfg.use_es and self.cfg.use_novelty
+            else ("ES+DQN" if self.cfg.use_es else "DQN")
+        )
+        elapsed = time.time() - self._start_time
+        compute_summary = {
+            "status": "completed",
+            "condition": condition,
+            "total_env_steps": self._last_total_env_steps,
+            "total_wall_clock_seconds": elapsed,
+        }
+        (self._run_dir / "status.json").write_text(json.dumps(compute_summary))

@@ -49,7 +49,8 @@ def train(
         cfg, log_dir=log_dir, verbose=verbose, progress_queue=progress_queue, run_dir=run_dir
     )
 
-    env_fn = lambda: make_env_with_config(cfg.env_id, cfg)
+    def env_fn():
+        return make_env_with_config(cfg.env_id, cfg)
     collect_env = make_env_with_config(
         cfg.env_id, cfg
     )  # used by DQN collect_episode when use_es=False

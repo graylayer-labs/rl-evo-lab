@@ -103,7 +103,7 @@ class TestTruncationBootstrap:
         """True termination (not truncation) should set done=True in buffer."""
         cfg = make_config("cartpole")
         device = torch.device("cpu")
-        learner = DQNLearner(cfg, device)
+        DQNLearner(cfg, device)
         buffer = ReplayBuffer(cfg.buffer_capacity, cfg.obs_dim)
 
         import gymnasium as gym
@@ -146,7 +146,7 @@ class TestDoubleQN:
         device = torch.device("cpu")
 
         learner = DQNLearner(cfg, device)
-        buffer = ReplayBuffer(cfg.buffer_capacity, cfg.obs_dim)
+        ReplayBuffer(cfg.buffer_capacity, cfg.obs_dim)
 
         # Create dummy batch
         batch_size = 8
@@ -160,7 +160,7 @@ class TestDoubleQN:
         from collections import namedtuple
 
         Batch = namedtuple("Batch", ["obs", "action", "reward", "next_obs", "done"])
-        batch = Batch(obs=obs, action=actions, reward=rewards, next_obs=next_obs, done=dones)
+        Batch(obs=obs, action=actions, reward=rewards, next_obs=next_obs, done=dones)
 
         # Compute Q-targets manually
         with torch.no_grad():

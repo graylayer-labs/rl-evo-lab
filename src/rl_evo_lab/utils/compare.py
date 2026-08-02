@@ -82,20 +82,69 @@ def _aggregate(
     smooth: bool = False,
     x_col: str = "episode",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Aggregate metrics across multiple seed runs using NaN-padding.
+
+    Instead of truncating all seeds to the shortest run, this pads shorter runs
+    with NaN and uses np.nanmean/np.nanstd to compute statistics. This preserves
+    longer runs and prevents bias toward early-stopped experiments.
+
+    Parameters
+    ----------
+    csv_list : list[Path]
+        List of CSV paths (one per seed run)
+    col : str
+        Column name to aggregate
+    smooth : bool
+        Whether to apply smoothing to mean and std
+    x_col : str
+        X-axis column name ("episode" or "total_env_steps")
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray, np.ndarray]
+        (x, mean, std) arrays where mean and std are computed across seeds
+        with NaN padding for runs that ended early.
+    """
     dfs = [pd.read_csv(p) for p in csv_list]
-    n = min(len(d) for d in dfs)
-    dfs = [d.iloc[:n] for d in dfs]
+    # Find max length to pad all dataframes to
+    max_len = max(len(d) for d in dfs)
 
-    x = dfs[0][x_col].values[:n] if x_col != "episode" else dfs[0]["episode"].values + 1
+    # Pad all dataframes to max_len with NaN
+    padded_arrays = []
+    for d in dfs:
+        col_values = d[col].values
+        if d[col].isna().any():
+            # Fill forward then backward to interpolate missing values
+            col_values = d[col].ffill().bfill().values
+        # Pad with NaN if shorter than max_len
+        if len(col_values) < max_len:
+            padded = np.full(max_len, np.nan)
+            padded[: len(col_values)] = col_values
+            padded_arrays.append(padded)
+        else:
+            padded_arrays.append(col_values)
 
-    if dfs[0][col].isna().any():
-        arrays = [d[col].ffill().bfill().values[:n] for d in dfs]
+    # Extract x-axis (use first dataframe's x values, padded with NaN if needed)
+    x_values = dfs[0][x_col].values
+    if x_col != "episode":
+        # For non-episode columns, pad with NaN
+        if len(x_values) < max_len:
+            x = np.full(max_len, np.nan)
+            x[: len(x_values)] = x_values
+        else:
+            x = x_values
     else:
-        arrays = [d[col].values[:n] for d in dfs]
+        # For episode column, add 1 (episodes are 0-indexed in CSV)
+        if len(x_values) < max_len:
+            x = np.full(max_len, np.nan)
+            x[: len(x_values)] = x_values + 1
+        else:
+            x = x_values + 1
 
-    stacked = np.stack(arrays)
-    mean = stacked.mean(axis=0)
-    std = stacked.std(axis=0)
+    # Stack and compute mean/std using NaN-aware functions
+    stacked = np.stack(padded_arrays)
+    mean = np.nanmean(stacked, axis=0)
+    std = np.nanstd(stacked, axis=0)
 
     if smooth:
         mean = _smooth(mean)
@@ -154,7 +203,7 @@ def compare(
     fig.suptitle(
         title or "Condition comparison — mean ± std across seeds", fontsize=12, fontweight="bold"
     )
-    ax_map = dict(zip([p[0] for p in panels], axes.flat))
+    ax_map = dict(zip([p[0] for p in panels], axes.flat, strict=False))
 
     _reward_cols = {"actor_extrinsic_reward", "learner_eval_reward"}
     first_solved_x: dict[str, dict[str, float]] = {}
