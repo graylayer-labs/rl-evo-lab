@@ -53,6 +53,7 @@ def train(
 
     def env_fn():
         return make_env_with_config(cfg.env_id, cfg)
+
     collect_env = make_env_with_config(
         cfg.env_id, cfg
     )  # used by DQN collect_episode when use_es=False

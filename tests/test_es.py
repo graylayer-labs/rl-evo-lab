@@ -104,6 +104,7 @@ def test_es_actor_updates_params():
 
     def env_fn():
         return gym.make("CartPole-v1")
+
     stats = actor.run_generation(env_fn, idn, buffer, episode_num=0)
 
     updated_params = actor.get_base_params()
@@ -360,9 +361,8 @@ def test_effective_n_workers_always_even_with_antithetic():
         elif progress == 1.0:
             actor._learner_eval = cfg.solved_reward + 10
         else:
-            actor._learner_eval = (
-                cfg.novelty_decay_start_reward +
-                progress * (cfg.solved_reward - cfg.novelty_decay_start_reward)
+            actor._learner_eval = cfg.novelty_decay_start_reward + progress * (
+                cfg.solved_reward - cfg.novelty_decay_start_reward
             )
 
         n_workers = actor._effective_n_workers()
@@ -390,8 +390,7 @@ def test_effective_n_workers_odd_minimum_handled():
     n_workers = actor._effective_n_workers()
     # Should be even, and >= 5 (if es_workers_min is 5, should bump to 6)
     assert n_workers % 2 == 0, (
-        f"With antithetic=True and odd es_workers_min, "
-        f"n_workers should be even. Got {n_workers}"
+        f"With antithetic=True and odd es_workers_min, n_workers should be even. Got {n_workers}"
     )
     # Since es_workers_min is 5 (odd) and we need even, should be 6
     assert n_workers >= cfg.es_workers_min, (
@@ -416,9 +415,8 @@ def test_effective_n_workers_decays_correctly():
         if progress == 0.0:
             actor._learner_eval = cfg.novelty_decay_start_reward - 10
         else:
-            actor._learner_eval = (
-                cfg.novelty_decay_start_reward +
-                progress * (cfg.solved_reward - cfg.novelty_decay_start_reward)
+            actor._learner_eval = cfg.novelty_decay_start_reward + progress * (
+                cfg.solved_reward - cfg.novelty_decay_start_reward
             )
 
         n_workers = actor._effective_n_workers()

@@ -1,4 +1,5 @@
 """Tests for environment wrappers and configuration."""
+
 import gymnasium as gym
 
 from rl_evo_lab.envs import CartPoleToughWrapper, LunarLanderToughWrapper, make_env_with_config
