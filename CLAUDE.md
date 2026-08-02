@@ -8,15 +8,16 @@ Reproduction and extension of MSc thesis: *"Improving Exploration in Evolutionar
 
 The core algorithm is **EDER** (Evolutionary Distributed Experience Replay): a gradient-based DRL learner (DQN) combined with an Evolution Strategy (ES) actor population. The ES fills the replay buffer with diverse experiences; the learner trains purely from that buffer — no epsilon-greedy exploration.
 
-- Python `>=3.12`, managed with [Poetry](https://python-poetry.org/)
+- Python `>=3.12`, managed with [UV](https://docs.astral.sh/uv/)
 
 ## Common Commands
 
 ```bash
-poetry install          # Install dependencies
-poetry add <package>    # Add a dependency
-poetry run pytest       # Run tests
-poetry run pytest tests/test_foo.py::test_bar  # Run single test
+uv sync                 # Sync dependencies from uv.lock
+uv add <package>        # Add a dependency
+uv add --dev <package>  # Add a dev dependency
+uv run pytest           # Run tests
+uv run pytest tests/test_foo.py::test_bar  # Run single test
 ```
 
 ## Architecture
