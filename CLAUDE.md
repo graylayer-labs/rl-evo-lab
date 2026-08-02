@@ -43,8 +43,8 @@ rₐ = rₑ + β · rᵢ
 ### Key hyperparameters
 | Param | Value | Notes |
 |-------|-------|-------|
-| σ | 0.06 | ES noise std dev — best from original experiments |
-| β | 0.02 | Intrinsic reward weight |
+| σ | 0.06 | ES noise std dev (baseline default) |
+| β | 0.02 | Intrinsic reward weight (baseline default) |
 | N workers | 50 | ES population size |
 | Sync freq τ | 25 eps | Actor → learner weight sync |
 
@@ -72,27 +72,16 @@ Always seed everything and log σ and β per run.
 
 ---
 
-## rl-core
+## Local RL infrastructure
 
-This repo **uses rl-core** (v0.2.0, from eoin-james/rl-core) but maintains local implementations for buffer, network, logging, and seeding that are not yet migrated. These remain local by design or are pending migration:
+This repository is self-contained. Keep its replay buffer, DQN network, flat
+parameter helpers, seeding, experiment lifecycle, and logging under
+`src/rl_evo_lab`.
 
-| Local impl | rl-core equivalent |
-|---|---|
-| `src/rl_evo_lab/buffer/replay_buffer.py` | `rl_core.buffers.ReplayBuffer` |
-| `src/rl_evo_lab/learner/network.py` (QNetwork + FlatParams) | `rl_core.algorithms.dqn.QNetwork` |
-| `src/rl_evo_lab/utils/seeding.py` | `rl_core.utils.seed_everything` |
-| `src/rl_evo_lab/utils/logging.py` (RunLogger) | `rl_core.experiments.RunManager` + `NamespacedLogger` |
+These implementations are intentionally tailored to EDER:
+- `ReplayBuffer` preserves integer actions and exposes `diversity_metric()`.
+- `QNetwork` exposes flat parameters for the ES actor.
+- `RunLogger` owns the experiment-specific CSV, progress, and status lifecycle.
 
-Before migrating, verify that rl-core's version covers the local usage. The local `ReplayBuffer` has a `diversity_metric()` method that rl-core's does not — open a change request if that's needed.
-
-To add rl-core as a dependency:
-```toml
-"rl-core @ git+https://github.com/graylayer-labs/rl-core.git@v1.0.0"
-```
-
-Key metric separation for this repo (use `NamespacedLogger`):
-- **`algo/`**: `learner_loss`, `q_mean`, `q_target_mean`
-- **`research/`**: `idn_loss`, `effective_beta`, `buffer_diversity`, `actor_augmented_reward`
-- **bare**: `actor_extrinsic_reward`, `learner_eval_reward`, `episode`, `sync`
-
-Logging `actor_extrinsic_reward` and `learner_eval_reward` in the bare namespace (not algo/ or research/) is intentional — they are the primary outcome metrics and should be immediately visible.
+Do not add a shared RL-library dependency unless another active project needs the
+same stable abstraction.

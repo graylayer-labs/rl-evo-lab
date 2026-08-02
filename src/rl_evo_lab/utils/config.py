@@ -132,8 +132,7 @@ class EDERConfig:
 
 ENV_PRESETS: dict[str, dict[str, Any]] = {
     # CartPole-v1 — Category: discrete_dense_short
-    # Tuned via diagnostic sweeps (σ, β, novelty_ramp)
-    # EDER with these HPs: 365.4 mean reward, beats ES+DQN by 87%
+    # HPs selected from category defaults with environment-specific tuning
     "cartpole": {
         "env_id": "CartPole-v1",
         "obs_dim": 4,
@@ -142,9 +141,9 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "total_episodes": 2000,
         "buffer_capacity": 50_000,
         "min_buffer_size": 500,
-        "es_sigma": 0.1,  # tuned: σ=0.1 optimal for exploration diversity
-        "beta": 0.1,  # tuned: 5x boost from 0.02 makes novelty signal meaningful
-        "novelty_ramp_episodes": 200,  # tuned: delay from 100 prevents ep 100-200 crash
+        "es_sigma": 0.1,
+        "beta": 0.1,
+        "novelty_ramp_episodes": 200,
         "target_update_freq": 100,
         "epsilon_decay_episodes": 200,
         "solved_reward": 475.0,
@@ -152,7 +151,6 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
     },
     # CartPole-Tough: Category: discrete_dense_short
     # Random starting position/angle + stricter termination (12° vs 24°) + 1000 step limit
-    # Uses same tuned HPs as CartPole Normal to test robustness improvement
     "cartpole_tough": {
         "env_id": "CartPole-v1",
         "obs_dim": 4,
@@ -161,9 +159,9 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "total_episodes": 2000,
         "buffer_capacity": 50_000,
         "min_buffer_size": 500,
-        "es_sigma": 0.1,  # tuned: same as CartPole Normal
-        "beta": 0.1,  # tuned: same as CartPole Normal
-        "novelty_ramp_episodes": 200,  # tuned: same as CartPole Normal
+        "es_sigma": 0.1,
+        "beta": 0.1,
+        "novelty_ramp_episodes": 200,
         "target_update_freq": 100,
         "epsilon_decay_episodes": 200,
         "solved_reward": 10000.0,  # high threshold so only full 1000-step episodes count
@@ -176,8 +174,6 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "_random_start": True,
     },
     # LunarLander-v3 — Category: continuous_dense_medium
-    # Tuned via similar diagnostic approach (assuming similar category behavior)
-    # Note: Needs final validation sweep to confirm these HPs
     "lunarlander": {
         "env_id": "LunarLander-v3",
         "obs_dim": 8,
@@ -275,9 +271,9 @@ def make_config(env: str = "cartpole", **overrides: Any) -> EDERConfig:
     preset = ENV_PRESETS.get(env)
     if preset is None:
         raise ValueError(f"Unknown env preset {env!r}. Available: {list(ENV_PRESETS)}")
-    # Filter out custom flags (prefixed with _) that are used for environment wrappers, not EDERConfig
+    # Filter out metadata and custom flags that are not EDERConfig parameters
     merged = {**preset, **overrides}
-    config_kwargs = {k: v for k, v in merged.items() if not k.startswith('_')}
+    config_kwargs = {k: v for k, v in merged.items() if not k.startswith('_') and k != 'category'}
     cfg = EDERConfig(**config_kwargs)
     # Attach custom flags to config for use by environment wrappers
     for k, v in merged.items():
