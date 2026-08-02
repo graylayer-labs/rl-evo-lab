@@ -98,9 +98,12 @@ def main():
         runs_dir = Path("runs")
         exported = 0
         for exp_dir in sorted(runs_dir.iterdir()):
-            if exp_dir.is_dir() and (exp_dir / "comparison.png").exists():
-                if export_comparison_plot(exp_dir.name):
-                    exported += 1
+            if (
+                exp_dir.is_dir()
+                and (exp_dir / "comparison.png").exists()
+                and export_comparison_plot(exp_dir.name)
+            ):
+                exported += 1
         print(f"\n✅ Exported {exported} comparisons to docs/img/")
         return
 

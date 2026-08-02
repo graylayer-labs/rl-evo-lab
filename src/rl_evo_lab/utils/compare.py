@@ -262,7 +262,7 @@ def compare(
                 alpha=0.7,
                 va="bottom",
             )
-            for idx, (condition, col_map) in enumerate(first_solved_x.items()):
+            for idx, (_condition, col_map) in enumerate(first_solved_x.items()):
                 if col in col_map:
                     ax.axvline(
                         col_map[col],
@@ -291,7 +291,7 @@ def compare(
 # ---------------------------------------------------------------------------
 
 
-def _make_registry() -> dict[str, dict[str, Experiment]]:  # type: ignore[name-defined]
+def _make_registry() -> dict[str, dict[str, "Experiment"]]:
     """Build the experiment registry lazily to avoid import cycles."""
     from rl_evo_lab.experiment import Condition, Experiment
 

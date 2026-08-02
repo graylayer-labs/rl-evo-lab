@@ -40,7 +40,7 @@ def check_idn_convergence(run_dir: str) -> dict:
                 loss = float(row.get("idn_loss", "nan"))
                 if loss == loss:  # not NaN
                     idn_losses.append(loss)
-            except:
+            except (ValueError, TypeError):
                 pass
 
         if idn_losses:

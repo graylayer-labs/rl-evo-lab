@@ -32,12 +32,14 @@ def _compute_sync_threshold(sync_eval_threshold: float, mean_extrinsic_return: f
 
 
 def train(
-    cfg: EDERConfig = EDERConfig(),
+    cfg: EDERConfig | None = None,
     log_dir: str = "runs",
     verbose: bool = True,
     progress_queue: Queue | None = None,
     run_dir: Path | None = None,
 ) -> None:
+    if cfg is None:
+        cfg = EDERConfig()
     seed_everything(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

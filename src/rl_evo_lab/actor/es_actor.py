@@ -317,7 +317,7 @@ class ESActor:
 
             # Update IDN loss EMA (α=0.05 for slow tracking)
             self._idn_loss_ema = 0.95 * self._idn_loss_ema + 0.05 * idn_loss
-            # Record baseline IDN loss at/after the end of warmup (on first episode with transitions)
+            # Record baseline IDN loss at end of warmup (first episode with transitions)
             if self._idn_loss_init is None and episode_num >= cfg.novelty_warmup_episodes - 1:
                 self._idn_loss_init = self._idn_loss_ema
 

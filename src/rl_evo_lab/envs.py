@@ -5,14 +5,24 @@ import numpy as np
 
 
 class CartPoleToughWrapper(gym.Wrapper):
-    """CartPole with random starting state, stricter angle limit, and 1000-step episodes."""
+    """CartPole with random starting state, stricter angle limit, and extended episodes."""
 
-    def __init__(self, env):
+    def __init__(self, env, cfg=None):
         super().__init__(env)
-        self.max_steps = 1000
+        # Use config flags if provided, otherwise use defaults
+        if cfg is not None and hasattr(cfg, "_episode_limit"):
+            self.max_steps = cfg._episode_limit
+        else:
+            self.max_steps = 1000
+        if cfg is not None and hasattr(cfg, "_cartpole_angle_limit"):
+            self.angle_limit = cfg._cartpole_angle_limit
+        else:
+            self.angle_limit = 0.209  # 12° in radians
+        if cfg is not None and hasattr(cfg, "_cartpole_position_limit"):
+            self.position_limit = cfg._cartpole_position_limit
+        else:
+            self.position_limit = 2.0  # slightly tighter than default 2.4
         self.step_count = 0
-        self.angle_limit = 0.209  # 12° in radians
-        self.position_limit = 2.0  # slightly tighter than default 2.4
         # Per-instance RNG to avoid thread-race on global np.random
         self.rng = np.random.Generator(np.random.PCG64(0))
 
@@ -55,13 +65,20 @@ class CartPoleToughWrapper(gym.Wrapper):
 
 
 class LunarLanderToughWrapper(gym.Wrapper):
-    """LunarLander with random starting state, tight landing zone, and 2000-step episodes."""
+    """LunarLander with random starting state, tight landing zone, and extended episodes."""
 
-    def __init__(self, env):
+    def __init__(self, env, cfg=None):
         super().__init__(env)
-        self.max_steps = 2000
+        # Use config flags if provided, otherwise use defaults
+        if cfg is not None and hasattr(cfg, "_episode_limit"):
+            self.max_steps = cfg._episode_limit
+        else:
+            self.max_steps = 2000
+        if cfg is not None and hasattr(cfg, "_landing_zone_radius"):
+            self.landing_zone_radius = cfg._landing_zone_radius
+        else:
+            self.landing_zone_radius = 0.1
         self.step_count = 0
-        self.landing_zone_radius = 0.1
         # Per-instance RNG to avoid thread-race on global np.random
         self.rng = np.random.Generator(np.random.PCG64(0))
 
@@ -118,14 +135,24 @@ class LunarLanderToughWrapper(gym.Wrapper):
 
 
 def make_env_with_config(env_id: str, cfg) -> gym.Env:
-    """Create environment, applying tough-variant wrappers if needed."""
-    env = gym.make(env_id, render_mode=None)
+    """Create environment, applying tough-variant wrappers if needed.
 
-    # Apply tough variant wrappers based on config flags
-    if hasattr(cfg, "_tough") and cfg._tough:
+    When using tough wrappers, max_episode_steps is disabled (None) to allow
+    the wrapper's custom episode limit to take effect.
+    """
+    # Disable the base TimeLimit when using tough wrappers so the wrapper's limit is used
+    is_tough = hasattr(cfg, "_tough") and cfg._tough
+    make_kwargs = {"render_mode": None}
+    if is_tough:
+        make_kwargs["max_episode_steps"] = None
+
+    env = gym.make(env_id, **make_kwargs)
+
+    # Apply tough variant wrappers based on config flags, passing cfg for dynamic configuration
+    if is_tough:
         if "CartPole" in env_id:
-            env = CartPoleToughWrapper(env)
+            env = CartPoleToughWrapper(env, cfg)
         elif "LunarLander" in env_id:
-            env = LunarLanderToughWrapper(env)
+            env = LunarLanderToughWrapper(env, cfg)
 
     return env

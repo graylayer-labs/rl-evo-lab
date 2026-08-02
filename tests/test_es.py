@@ -188,7 +188,7 @@ def test_select_workers_novelty_floor_overrides_combined():
 
 
 def test_select_workers_balanced_alpha():
-    """With alpha=0.5, a high-novelty/low-fitness worker can outscore a low-novelty/mid-fitness one."""
+    """High-novelty/low-fitness worker can outscore low-novelty/mid-fitness with alpha=0.5."""
     results = [
         _make_result(fitness=50.0, mean_novelty=0.9),  # 0: mid fitness, high novelty
         _make_result(fitness=80.0, mean_novelty=0.1),  # 1: high fitness, low novelty
@@ -288,7 +288,7 @@ def test_idn_baseline_captured_after_warmup():
         return gym.make("CartPole-v1")
 
     # Run a generation at the boundary episode (episode 2 = warmup_episodes - 1)
-    # This should trigger baseline capture (or at least be ready to capture on next non-empty episode)
+    # This should trigger baseline capture at the end of warmup
     stats = actor.run_generation(env_fn, idn, buffer, episode_num=2)
 
     # After running generation 2 (at boundary), baseline should have been captured

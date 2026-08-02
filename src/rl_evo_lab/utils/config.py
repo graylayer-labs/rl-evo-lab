@@ -199,7 +199,7 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "solved_reward": 200.0,
         "novelty_decay_start_reward": 150.0,
     },
-    # LunarLander-Tough: random starting position/velocity + tight landing zone (±0.1 pad center) + 2000 step limit
+    # LunarLander-Tough: random start + tight landing zone (±0.1 pad center) + 2000 step limit
     "lunarlander_tough": {
         "env_id": "LunarLander-v3",
         "obs_dim": 8,
