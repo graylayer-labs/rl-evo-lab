@@ -189,9 +189,9 @@ class TestIDNLearning:
 
         idn = InverseDynamicsNetwork(cfg, device)
 
-        obs_samples = torch.randn(100, cfg.obs_dim)
-        next_obs_samples = torch.randn(100, cfg.obs_dim)
-        action_samples = torch.randint(0, cfg.act_dim, (100,))
+        obs_samples = torch.randn(100, cfg.obs_dim).numpy()
+        next_obs_samples = torch.randn(100, cfg.obs_dim).numpy()
+        action_samples = torch.randint(0, cfg.act_dim, (100,)).numpy()
 
         initial_loss = None
         for step in range(50):
