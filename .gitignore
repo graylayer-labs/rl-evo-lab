@@ -36,6 +36,7 @@ runs/
 checkpoints/
 *.pt
 *.pth
+*_run.log
 wandb/
 
 # Claude Code
