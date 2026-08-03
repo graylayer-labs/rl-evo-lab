@@ -227,34 +227,44 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "_landing_zone_radius": 0.1,  # ±0.1 of pad center
         "_episode_limit": 2000,
     },
-    # Acrobot-v1 — solved at -100. Medium episodes (~200-500 steps).
+    # Acrobot-v1 — solved at -100. Discrete actions, sparse reward, long episodes.
+    # Category: discrete_sparse_long (sparse signal needs stronger novelty + faster ramp)
     "acrobot": {
         "env_id": "Acrobot-v1",
         "obs_dim": 6,
         "act_dim": 3,
+        "category": "discrete_sparse_long",
         "total_episodes": 1000,
         "buffer_capacity": 50_000,
         "min_buffer_size": 1_000,
         "epsilon_decay_episodes": 400,
+        # Category-specific HPs: applied via make_config() from ENV_CATEGORIES
+        "es_sigma": 0.15,
+        "beta": 0.2,
+        "es_n_workers": 12,
+        "novelty_ramp_episodes": 300,
         "solved_reward": -100.0,
         "novelty_decay_start_reward": -130.0,
     },
-    # MountainCar-v0 — solved at -110. Dense negative reward (-1/step), but agent
-    # must discover momentum-building behaviour to reach the goal — ε-greedy DQN
-    # almost never manages this unaided. EDER's novelty drives population to explore
-    # (position, velocity) space, eventually discovering the swing strategy.
+    # MountainCar-v0 — solved at -110. Continuous actions, sparse reward, long episodes.
+    # Dense negative reward (-1/step), but agent must discover momentum-building behaviour.
+    # ε-greedy DQN almost never manages this unaided. EDER's novelty drives exploration.
+    # Category: continuous_sparse_long (sparse + continuous need strong novelty + large pop)
     "mountaincar": {
         "env_id": "MountainCar-v0",
         "obs_dim": 2,
         "act_dim": 3,
+        "category": "continuous_sparse_long",
         "total_episodes": 1000,  # ceiling; early stopping usually triggers first
         "buffer_capacity": 30_000,  # episodes are max 200 steps; 30k is plenty
         "min_buffer_size": 1_000,
-        "es_n_workers": 10,  # 5 antithetic pairs — more than cartpole, task needs exploration
+        # Category-specific HPs: applied via make_config() from ENV_CATEGORIES
+        "es_sigma": 0.18,
+        "beta": 0.25,
+        "es_n_workers": 15,
+        "novelty_ramp_episodes": 350,
         "epsilon_decay_episodes": 300,
-        "beta": 0.05,  # higher novelty weight for sparse-signal env
         "novelty_warmup_episodes": 50,
-        "novelty_ramp_episodes": 75,
         "solved_reward": -110.0,
         "novelty_decay_start_reward": -150.0,
     },
@@ -264,6 +274,12 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
 def make_config(env: str = "cartpole", **overrides: Any) -> EDERConfig:
     """Build an EDERConfig from an env preset name with optional overrides.
 
+    Merges in this order (higher priority wins):
+    1. Dataclass defaults (EDERConfig)
+    2. Category defaults (ENV_CATEGORIES[category_name])
+    3. Preset values (ENV_PRESETS[env])
+    4. Overrides (caller-provided kwargs)
+
     Example::
 
         cfg = make_config("lunarlander", total_episodes=1000, seed=7)
@@ -271,10 +287,22 @@ def make_config(env: str = "cartpole", **overrides: Any) -> EDERConfig:
     preset = ENV_PRESETS.get(env)
     if preset is None:
         raise ValueError(f"Unknown env preset {env!r}. Available: {list(ENV_PRESETS)}")
+
+    # Extract category from preset, if specified
+    category_name = preset.get("category")
+    category = ENV_CATEGORIES.get(category_name) if category_name else {}
+
+    # Merge: category defaults < preset < overrides
+    # This ensures overrides win, preset > category > dataclass defaults
+    merged = {**category, **preset, **overrides}
+
     # Filter out metadata and custom flags that are not EDERConfig parameters
-    merged = {**preset, **overrides}
-    config_kwargs = {k: v for k, v in merged.items() if not k.startswith("_") and k != "category"}
+    config_kwargs = {
+        k: v for k, v in merged.items()
+        if not k.startswith("_") and k not in {"category", "description"}
+    }
     cfg = EDERConfig(**config_kwargs)
+
     # Attach custom flags to config for use by environment wrappers
     for k, v in merged.items():
         if k.startswith("_"):
