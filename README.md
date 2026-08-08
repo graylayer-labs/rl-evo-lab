@@ -41,12 +41,38 @@ We test across a spectrum of environments specifically chosen to show where stan
 - **Sparse tasks (CartPole-sparse, Acrobot)**: DQN fails completely → this is where exploration techniques must prove value
 - **Clear baseline**: Ground truth showing exactly where and why RL gets stuck
 
-### Phase 3 Plan (Next)
-Run **Evolutionary RL** and **Novelty-Guided RL** on the same 4 environments:
-1. Compare ES alone vs. DQN (shows ES impact)
-2. Compare Novelty-Guided vs. ES alone (shows novelty impact)
-3. Compare Novelty-Guided vs. DQN (shows combined impact)
-4. All comparisons use environment steps (fair compute budget)
+### Phase 3 Experimental Design
+
+Compare three approaches on the same environment spectrum:
+
+| Method | What It Isolates | Expected Pattern |
+|---|---|---|
+| **DQN** (baseline) | Pure RL with ε-greedy | Fails on sparse tasks |
+| **Evolutionary RL** | ES population diversity alone | Helps on sparse? Overhead on dense? |
+| **Novelty-Guided RL** | ES + novelty signal combined | Better than ES alone? Synergize? |
+
+**How to interpret Phase 3 results:**
+
+- **If Evolutionary RL >> DQN on CartPole-sparse**: ES diversity is key; novelty may not be needed
+- **If Novelty-Guided RL >> Evolutionary RL on CartPole-sparse**: Novelty guides ES effectively
+- **If both fail**: Mechanism doesn't work as theorized; deeper investigation needed
+- **If Novelty-Guided RL fails on LunarLander**: Intrinsic motivation hurts precision (adds overhead)
+
+All comparisons use **environment steps** (fair compute budget across methods).
+
+---
+
+## If You Just Want Results
+
+Each environment's comparison plot is the primary artifact:
+
+```
+runs/cartpole_baseline_dqn/comparison.png
+runs/cartpole_evolutionary_rl/comparison.png
+runs/cartpole_novelty_guided_rl/comparison.png
+```
+
+Stack these plots side-by-side to see all three methods on CartPole.
 
 See [ENVIRONMENTS.md](ENVIRONMENTS.md) for detailed hypotheses and rationale.
 
@@ -126,32 +152,32 @@ Requires Python ≥ 3.12. Core dependencies: `torch`, `gymnasium`, `numpy`.
 
 ---
 
-## Fastest Path to Understanding the Research
+## Running Phase 3: Complete the Comparison
 
-**Run DQN baseline across the 5-environment spectrum:**
+DQN baselines are done. Now run the other two approaches to compare:
 
+**Option A: Run all three approaches on one environment**
 ```bash
-python experiments/baseline_dqn.py --all --show
-```
-
-This trains DQN on CartPole, LunarLander, CartPole-sparse, and Acrobot (3 seeds each, ~30-45 min total). This establishes ground truth for where exploration is the bottleneck.
-
-**Run one environment at a time:**
-
-```bash
-python experiments/baseline_dqn.py --env cartpole --show        # ~5 min
-python experiments/baseline_dqn.py --env lunarlander --show     # ~20 min
-python experiments/baseline_dqn.py --env cartpole_sparse --show # ~5 min
-python experiments/baseline_dqn.py --env acrobot --show         # ~15 min
-```
-
-**Plot existing results without retraining:**
-
-```bash
+# CartPole: see how DQN, ES, and novelty compare
 python experiments/baseline_dqn.py --env cartpole --plot-only --show
+python experiments/evolutionary_rl.py --env cartpole --show
+python experiments/novelty_guided_rl.py --env cartpole --show
 ```
 
-Results appear under `runs/cartpole_baseline_dqn/` and are automatically aggregated as `comparison.png`.
+**Option B: Run full Phase 3 across all environments**
+```bash
+python experiments/evolutionary_rl.py --all
+python experiments/novelty_guided_rl.py --all
+```
+(This takes 1-2 hours for all seeds/envs. Run in parallel on multiple machines if available.)
+
+**Option C: Compare results without retraining**
+```bash
+python experiments/evolutionary_rl.py --env cartpole --plot-only --show
+python experiments/novelty_guided_rl.py --env cartpole --plot-only --show
+```
+
+Results generate comparison plots automatically (mean ± std across seeds) under `runs/`.
 
 ---
 
