@@ -15,17 +15,30 @@ We test these across an environment spectrum specifically chosen to show where s
 
 ---
 
-## Current Status: Phase 2 — Establish Baseline (In Progress)
+## Current Status: Phase 2 — DQN Baseline Complete ✓
 
-| Environment | Type | Why Test? | DQN | ES+DQN | EDER |
+| Environment | Type | DQN Mean | Threshold | Solved? | What This Tests |
 |---|---|---|---|---|---|
-| CartPole-v1 | Dense baseline | Does EDER add overhead on simple tasks? | testing | — | — |
-| LunarLander-v3 | Dense precision | Does novelty hurt precision control? | testing | — | — |
-| CartPole-sparse | Sparse discovery | Does ES help when per-step signal vanishes? | testing | — | — |
-| Acrobot-v1 | Sparse discovery | Can novelty guide toward rare behaviors? | testing | — | — |
-| Montezuma's Revenge | Hard exploration | Can ES+novelty find signal in deceptive worlds? | deferred | — | — |
+| CartPole-v1 | Dense baseline | 151.7 | 475.0 | ❌ Struggles | Does complexity add overhead? |
+| LunarLander-v3 | Dense precision | 215.5 | 200.0 | ✅ Yes | Does novelty hurt precision? |
+| CartPole-sparse | Sparse discovery | 0.0 | 475.0 | ❌ Fails | Can ES bridge zero-gradient gap? |
+| Acrobot-v1 | Sparse discovery | -500.0 | -100.0 | ❌ Fails | Can novelty guide rare strategies? |
+| Montezuma's Revenge | Hard exploration | — | — | — | Can combined approach find any signal? |
 
-**Phase 2 goal:** Establish DQN ground truth on each environment. This shows where exploration is the bottleneck. See [ENVIRONMENTS.md](ENVIRONMENTS.md) for detailed hypotheses and rationale.
+**Key finding:** DQN fails on sparse tasks (CartPole-sparse, Acrobot) and barely solves dense tasks (CartPole). This shows **where ES and/or novelty would need to add value**.
+
+### What the Baseline Tells Us
+
+| Result | Implication |
+|---|---|
+| **CartPole**: DQN reaches 151.7/475 (32%) | Dense task, but still hard for pure ε-greedy. ES population diversity might help. |
+| **LunarLander**: DQN solves at 215.5 > 200 | Dense reward works; precision control doesn't need novelty. If EDER fails here, novelty adds overhead. |
+| **CartPole-sparse**: DQN gets 0 reward | Sparse tasks are impossible for gradient-based learning. ES diversity is essential here. Does novelty improve ES further? |
+| **Acrobot**: DQN reaches -500 (max penalty) | Discovery task; no progress without better exploration. Both ES and novelty should help. |
+
+**Next phase:** Run ES+DQN and EDER on this same spectrum. Compare by environment steps (fair) to see which techniques actually solve the problems DQN can't.
+
+See [ENVIRONMENTS.md](ENVIRONMENTS.md) for detailed hypotheses and rationale.
 
 ---
 
