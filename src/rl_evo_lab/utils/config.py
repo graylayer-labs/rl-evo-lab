@@ -149,6 +149,28 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "solved_reward": 475.0,
         "novelty_decay_start_reward": 400.0,
     },
+    # CartPole-Sparse: Category: discrete_sparse_long
+    # Reward = 0 per step, +500 only at episode completion (test sparse-reward learning)
+    # Uses discrete_sparse_long HPs for stronger exploration despite short episodes
+    "cartpole_sparse": {
+        "env_id": "CartPole-v1",
+        "obs_dim": 4,
+        "act_dim": 2,
+        "category": "discrete_sparse_long",
+        "total_episodes": 2000,
+        "buffer_capacity": 50_000,
+        "min_buffer_size": 500,
+        "es_sigma": 0.15,  # from discrete_sparse_long category
+        "es_n_workers": 12,  # from discrete_sparse_long category
+        "beta": 0.2,  # from discrete_sparse_long category
+        "novelty_ramp_episodes": 300,  # from discrete_sparse_long category
+        "target_update_freq": 100,
+        "epsilon_decay_episodes": 200,
+        "solved_reward": 475.0,  # 95% of max episode length (500 steps)
+        "novelty_decay_start_reward": 400.0,
+        # Sparse variant flag: wrapper produces 0/step, +500 at terminal success
+        "_sparse": True,
+    },
     # CartPole-Tough: Category: discrete_dense_short
     # Random starting position/angle + stricter termination (12° vs 24°) + 1000 step limit
     "cartpole_tough": {
@@ -267,6 +289,31 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "novelty_warmup_episodes": 50,
         "solved_reward": -110.0,
         "novelty_decay_start_reward": -150.0,
+    },
+    # Montezuma's Revenge (RAM observations) — sparse/deceptive exploration benchmark
+    # Category: discrete_sparse_hard (sparse, long episodes, hard exploration)
+    # RAM variant: 128-byte flat observation (no image encoder needed)
+    # Single-seed exploratory baseline with capped episode budget
+    "montezuma": {
+        "env_id": "ALE/MontezumaRevenge-ram-v5",
+        "obs_dim": 128,
+        "act_dim": 18,
+        "total_episodes": 500,  # capped budget for exploratory baseline (1 seed only)
+        "buffer_capacity": 100_000,
+        "min_buffer_size": 5_000,
+        "es_sigma": 0.15,
+        "es_n_workers": 12,
+        "beta": 0.2,
+        "novelty_ramp_episodes": 300,
+        "epsilon_decay_episodes": 400,
+        "batch_size": 64,
+        "hidden_dim": 256,
+        "embed_dim": 128,
+        "eval_freq": 25,
+        "target_update_freq": 100,
+        # Solved threshold: no fixed target; documenting failure/success modes
+        "solved_reward": 1000.0,  # optimistic ceiling for exploration progress
+        "novelty_decay_start_reward": 500.0,
     },
 }
 

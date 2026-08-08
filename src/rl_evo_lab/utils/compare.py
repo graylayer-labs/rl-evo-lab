@@ -34,10 +34,11 @@ _PALETTE = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab
 _LINESTYLES = ["-", "--", "-.", ":"]
 
 _SOLVED_THRESHOLDS: dict[str, float] = {
-    "CartPole-v1": 475.0,
+    "CartPole-v1": 475.0,  # dense and sparse variants both use this env_id
     "LunarLander-v3": 200.0,
     "Acrobot-v1": -100.0,
     "MountainCar-v0": -110.0,
+    "ALE/MontezumaRevenge-ram-v5": 1000.0,  # exploratory baseline; no fixed "solved" state
 }
 
 _PANELS_BASE = [
@@ -84,7 +85,7 @@ def _aggregate(
     csv_list: list[Path],
     col: str,
     smooth: bool = False,
-    x_col: str = "episode",
+    x_col: str = "total_env_steps",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Aggregate metrics across multiple seed runs using NaN-padding.
 
@@ -186,7 +187,7 @@ def compare(
     out_dir: Path | None = None,
     show: bool = False,
     title: str = "",
-    x_col: str = "episode",
+    x_col: str = "total_env_steps",
 ) -> Path:
     """Plot mean ± std band per condition across seeds.
 
@@ -364,14 +365,19 @@ def main() -> None:
     parser.add_argument("--show", action="store_true")
     parser.add_argument("--plot-only", action="store_true")
     parser.add_argument("--force", action="store_true")
-    parser.add_argument("--x-axis", choices=["episode", "env_steps"], default=None)
+    parser.add_argument(
+        "--x-axis",
+        choices=["episode", "env_steps"],
+        default="env_steps",
+        help="X-axis for plots: 'env_steps' is fair for ES comparisons (default)",
+    )
     args = parser.parse_args()
 
     registry = _make_registry()
     exp = registry[args.experiment][args.env]
     exp.seeds = args.seeds
 
-    x_axis = args.x_axis or ("env_steps" if args.experiment == "sample_efficiency" else "episode")
+    x_axis = args.x_axis
 
     if args.plot_only:
         exp.plot(show=args.show, x_axis=x_axis)
