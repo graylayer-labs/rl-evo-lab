@@ -1,185 +1,62 @@
-# rl-evo-lab
+# rl-evo-lab: When Can Novelty and Evolution Strategies Improve RL?
 
-Evolutionary reinforcement learning project focused on **EDER** (Evolutionary Distributed Experience Replay): a hybrid system where an **Evolution Strategy actor population** explores, a **DQN learner** trains from replay only, and an **intrinsic novelty signal** drives broader state-space coverage.
+## Research Question
 
-This repo started as a reproduction of the MSc thesis *"Improving Exploration in Evolutionary Reinforcement Learning through Novelty Search"* (NUI Galway, 2021), then grew into a cleaner experiment harness with stronger ablations, replay-buffer filtering, and reproducible multi-seed comparisons.
+**In exploration-stuck environments, does novelty-driven search and/or evolutionary strategies actually improve RL — or are they overhead?**
 
-EDER replaces epsilon-greedy exploration with an **Evolution Strategy (ES) actor population** that fills the replay buffer with diverse transitions. A **DQN learner** trains purely from that buffer — no env interaction during training. An **intrinsic novelty reward** (KNN over learned state embeddings) keeps the ES population exploring new state regions rather than converging to a local optimum.
+This work evaluates **EDER** (Evolutionary Distributed Experience Replay) — a hybrid algorithm combining an ES actor population, DQN learner, and KNN-based novelty bonus — against three simpler variants to answer: which techniques (if any) break through when RL gets stuck?
 
----
+### The Four Methods
+1. **DQN** — Pure epsilon-greedy baseline (RL baseline)
+2. **ES+DQN** — ES population, no novelty (evolution without intrinsic motivation)
+3. **EDER** — ES + novelty signal (both techniques combined)
 
-## Why this repo is worth looking at
-
-- Hybrid RL architecture with a clean actor/learner separation through replay only
-- Reproducible experiment runner with multi-seed comparisons and cached reruns
-- Explicit ablations across `EDER`, `ES+DQN`, and pure `DQN`
-- Concrete engineering work beyond reproduction: replay-buffer filtering, config generation, result comparison tooling, and README automation
-- Honest narrative of what worked, what didn't, and what remains open — modernizing a 2021 MSc thesis with current standards
+We test these across an environment spectrum specifically chosen to show where standard RL fails and what combination of techniques succeeds.
 
 ---
 
-## Results at a Glance
+## Current Status: Phase 2 — Establish Baseline (In Progress)
 
-This section summarizes the key findings across CartPole and LunarLander environments. Full detailed analysis is in the [Findings](#findings) section below, with embedded comparison plots showing all four critical experiments.
+| Environment | Type | Why Test? | DQN | ES+DQN | EDER |
+|---|---|---|---|---|---|
+| CartPole-v1 | Dense baseline | Does EDER add overhead on simple tasks? | testing | — | — |
+| LunarLander-v3 | Dense precision | Does novelty hurt precision control? | testing | — | — |
+| CartPole-sparse | Sparse discovery | Does ES help when per-step signal vanishes? | testing | — | — |
+| Acrobot-v1 | Sparse discovery | Can novelty guide toward rare behaviors? | testing | — | — |
+| Montezuma's Revenge | Hard exploration | Can ES+novelty find signal in deceptive worlds? | deferred | — | — |
 
----
-
-## Findings
-
-### The Bottom Line
-
-**Tuning did not fix EDER. DQN wins.** Systematic hyperparameter tuning (β: 0.02→0.1, σ: 0.06→0.1, ramp: 100→200) failed to make EDER competitive with simple epsilon-greedy DQN. On CartPole Normal: DQN 248.1 > EDOR 217.7 > ES+DQN 198.5. On CartPole Tough, all methods collapse to the same performance (134–141), rendering tuning benefits meaningless. The honest result: **ES-based exploration fundamentally loses to epsilon-greedy baseline.** Tuning improved EDOR relative to ES+DQN, but that's a pyrrhic win — both ES methods are dominated by DQN.
-
-### Raw Data (Objective Numbers)
-
-**CartPole Normal (2000 episodes, 3 seeds):**
-| Method | Mean | Std Dev | Seeds |
-|--------|------|---------|-------|
-| DQN | 248.08 | 218.23 | [116.8, 127.5, 500.0] |
-| EDER | 217.72 | 196.16 | [90.8, 443.6, 118.7] |
-| ES+DQN | 198.53 | 113.28 | [320.4, 178.9, 96.3] |
-
-**CartPole Tough (2000 episodes, 3 seeds):**
-| Method | Mean | Std Dev | Seeds |
-|--------|------|---------|-------|
-| EDER | 141.35 | 62.85 | [213.8, 101.5, 108.7] |
-| ES+DQN | 135.87 | 50.35 | [193.7, 112.5, 101.5] |
-| DQN | 134.40 | 39.62 | [105.7, 117.9, 179.6] |
-
-**Key observations:** 
-- **DQN beats EDER decisively on Normal (248.1 vs 217.7, +13.9%)**
-- **On Tough, all methods tie (134–141), tuning provides no benefit**
-- **EDER's variance is 1.6× higher than ES+DQN** — tuning destabilized rather than stabilized
-- **9.6% EDER margin over ES+DQN is noise (std dev 196)** — signal-to-noise ratio 0.11x
-- **Diagnostic sweeps predicted 73% improvement; actual validation showed 9.6%** — tuning overpromised, failed to deliver
-- **Conclusion:** ES methods are fundamentally limited. Tuning EDOR relative to ES+DQN is irrelevant when both lose to DQN.
-
-### Why ES Methods Underperform (The Diagnosis)
-
-**Sample efficiency:**
-- EDER / ES+DQN: 150-213k env steps @ ep 500 → reward 104-186.7
-- DQN: 47-50k env steps @ ep 500 → reward 129.2
-
-DQN is 3-4x more efficient. Why? The ES actor is generating weak experience:
-
-**ES Actor Trajectory (CartPole Normal, seed 42):**
-- Ep 0-50: Actor 12→23 (cold start, no novelty yet)
-- Ep 100: Actor peaks at 86.8, Learner at 267.0 (best point)
-- Ep 100-200: **Novelty ramp-up kicks in** (beta: 0.009→0.020), actor destabilizes (86→53→129 oscillation)
-- Ep 200+: Learner crashes to 67.3 while actor explores for novelty instead of reward
-
-**Root cause: Novelty beta=0.02 is too weak relative to extrinsic reward (~40), so the augmented reward `r = r_ext + 0.02·r_novelty` is dominated by exploration noise. The ES population abandons good policies to chase novelty, flooding the buffer with crash trajectories.**
-
-This explains:
-- Why ES actor only reaches 40-50 final reward (it's optimizing novelty, not task reward)
-- Why learner crashes on LunarLander (buffer fills with high-diversity, low-quality trajectories)
-- Why DQN wins (epsilon-greedy is simpler and doesn't get distracted by weak novelty signal)
-
-### The Fix (Implemented)
-
-Systematic diagnostic sweeps identified and implemented three key improvements:
-
-| Parameter | Old | New | Rationale |
-|-----------|-----|-----|-----------|
-| **β (novelty weight)** | 0.02 | 0.1 | 5× stronger signal makes novelty meaningful guidance, not noise |
-| **σ (ES mutation noise)** | 0.06 | 0.1 | Optimal exploration diversity across CartPole's action space |
-| **novelty_ramp_episodes** | 100 | 200 | Gradual ramp prevents sharp reward-landscape shift that destabilizes learner |
-| **Double DQN** | — | ✅ Added | Reduces Q-value overestimation on noisy ES-generated data |
-
-These changes directly address the root causes identified in the diagnosis: weak novelty signal and aggressive ramp-up.
-
-### Validation Results: Modest Improvement, Stability Questions Remain
-
-**CartPole Normal (2000 episodes, 3 seeds):**
-
-- **EDER: 217.7 mean** (seeds: 90.8, 443.6, 118.7)
-- **ES+DQN: 198.5 mean** (seeds: 320.4, 178.9, 96.3)
-- **DQN: 248.1 mean** (seeds: 116.8, 127.5, 500.0) — beats EDER
-
-**Findings:**
-- Tuning improves EDER by 9.6% over baseline ES+DQN
-- But DQN achieves higher mean (248.1) with lower variance in most seeds
-- EDER shows seed42 peak at 443.6 but crashes to 90-118 on other seeds — instability persists
-- Discrepancy with quick diagnostics (87% predicted improvement → 9.6% actual) suggests ES variance compounds over longer runs, independent of HP tuning
+**Phase 2 goal:** Establish DQN ground truth on each environment. This shows where exploration is the bottleneck. See [ENVIRONMENTS.md](ENVIRONMENTS.md) for detailed hypotheses and rationale.
 
 ---
 
-### CartPole: DQN Wins, EDER Beats ES+DQN (Barely)
+## What Each Algorithm Tests
 
-**CartPole Normal (Tuned HPs: β=0.1, σ=0.1, ramp=200):**
+- **DQN alone fails where?** Identifies the exploration problem
+- **ES+DQN solves it?** If yes → ES diversity (population) is sufficient  
+- **Need novelty too?** If only EDER succeeds → intrinsic motivation is necessary
 
-![CartPole Normal comparison showing DQN dominance (248.1 mean), with EDER (217.7) beating ES+DQN (198.5) within high variance.](docs/img/cartpole_normal_comparison.png)
-
-With tuned hyperparameters:
-- **DQN: 248.1 mean** ← **CHART WINNER** (superior epsilon-greedy)
-- **EDER: 217.7 mean** (improved from 186.7 with old HPs)
-- **ES+DQN: 198.5 mean** (improved from 104.2)
-
-The tuning does improve EDER vs ES+DQN (+9.6%), but this gain is **within experimental noise** (EDER std dev: 196.16, which is 20× larger than the 19-point improvement). **DQN outperforms tuned EDER by 13.9%** — showing that simpler epsilon-greedy exploration beats sophistication tuning. The diagnostic sweeps predicted 87% improvement; actual validation showed 9.6% — 87% of the gain disappeared at scale.
-
-**CartPole Tough (Tuned HPs: random start, stricter angle, 1000 steps):**
-
-![CartPole Tough comparison showing all three methods collapsed to ~135–141 mean with high variance and overlapping confidence bands.](docs/img/cartpole_tough_comparison.png)
-
-With tuned hyperparameters:
-- **EDER: 141.3 mean** (barely wins; seeds: 213.8, 101.5, 108.7)
-- **ES+DQN: 135.9 mean** (seeds: 193.7, 112.5, 101.5)
-- **DQN: 134.4 mean** (seeds: 105.7, 117.9, 179.6)
-
-**The real story:** All three methods collapse to essentially the same performance (+/- 6 points) when robustness challenge is added. EDER's 4% margin over ES+DQN is **trivial relative to variance** (EDER std: 62.85). Across both environments, tuning helped ES vs ES (+9.6% Normal, +4.0% Tough) but **failed to make ES competitive with DQN** or resilient to perturbation. This is the negative result: tuning cannot overcome ES fundamental brittleness.
+This isolates **which technique(s) actually solve exploration-stuck problems**.
 
 ---
 
-### LunarLander: DQN solves and holds; ES methods catastrophically fail
+## Why This Repo Exists
 
-**LunarLander Normal:**
-
-![LunarLander comparison showing EDER crashing from peaks of 235–262 down to 27.2 final reward. DQN holds steady at 237.9.](docs/img/lunarlander_comparison.png)
-
-Final eval rewards:
-- **DQN: 237.9** (holds solution)
-- EDER: 27.2 (catastrophic forgetting)
-- ES+DQN: 121.3 (severe failure)
-
-**LunarLander Tough:**
-
-![LunarLander tough comparison showing DQN dominance (266.2) and ES+DQN collapse (-65.7).](docs/img/lunarlander_tough_comparison.png)
-
-Final eval rewards:
-- **DQN: 266.2** (robust)
-- EDER: 26.7 (catastrophic forgetting)
-- ES+DQN: -65.7 (severe collapse)
-
-**Why ES fails:** The forgetting is **ES-driven, not novelty-driven.** ES+DQN (without intrinsic novelty) exhibits the same collapse as EDER, proving the problem is ES exploration, not the IDN module. The ES population continues exploring after convergence, flooding the replay buffer with diverse-but-suboptimal transitions that overwrite the high-reward experiences that solved the task. This is a fundamental open problem in ES-based RL.
+- **Hybrid RL architecture**: Clean actor/learner separation through replay buffer only—neither component depends on the other's internals
+- **Environment spectrum**: Not arbitrary benchmarks, but strategically chosen to isolate whether exploration is the bottleneck
+- **Fair comparison**: All algorithms compared by environment steps, not episodes (ES gets 50× more interaction per episode; plotting by episode is misleading)
+- **Honest results**: What works, what doesn't, what's open — no hand-waving or hidden tuning
+- **Reproducibility**: Multi-seed runs, cached reruns, automatic result aggregation
 
 ---
 
-### Thesis vs. Now (2021 → 2026)
+## Documentation
 
-The original MSc thesis (2021):
-- Single-run plots on CartPole only
-- No environment-step accounting
-- No systematic ablations
-- Manual result inspection
-
-This repo now:
-- Multi-seed runs with confidence intervals (3 seeds minimum)
-- Full environment-step cost tracking
-- Clean `EDER` / `ES+DQN` / `DQN` ablations across CartPole and LunarLander
-- Idempotent experiment runner with caching and automatic reproducibility
-- Honest accounting of what works, what doesn't, and what remains open
+- **[ENVIRONMENTS.md](ENVIRONMENTS.md)** — Why each environment, what we expect to see, compute budget
+- **[WORK_LOG.md](WORK_LOG.md)** — Internal session notes (not for readers; tracks decisions and next steps)
 
 ---
 
-### Field context (2021–2025)
-
-Episodic-novelty-style exploration (our inverse-dynamics + KNN approach) was independently validated by DeepMind's NGU (2020) and Agent57 (2021) — a strong external signal. The field has moved beyond "ES fills a buffer for a learner" toward quality-diversity approaches like PGA-MAP-Elites (2021) and ERL-Re2 (2023), where the ES population maintains a behaviorally diverse archive and the learner improves each cell. That's the natural next-generation architecture, but it's a bigger change than this repo currently spans.
-
-Immediate improvements to try: prioritized replay (PER) would directly attack the LunarLander forgetting problem, and double DQN is a one-line learner improvement. See references for papers.
-
----
-
-## Start here
+## Start Here
 
 If you want to understand the repo fast and see a result immediately:
 
@@ -196,15 +73,22 @@ That first experiment compares the three core modes:
 
 ---
 
-## What this repo is
+## The Architecture: What This Repo Is
 
-This codebase is organized around one simple boundary:
+This codebase is built around a single, clean boundary:
 
-- the **actor** explores
-- the **learner** optimizes
-- the **replay buffer** is the only interface between them
+```
+Actor (ES population)  →  [Shared Replay Buffer]  →  Learner (DQN)
+```
 
-In ES mode, a population of perturbed policies interacts with the environment and fills the replay buffer. The learner trains only from that buffer. In pure DQN mode, the learner falls back to standard epsilon-greedy data collection.
+- The **actor** (ES population of 50 policies) generates diverse experiences via parameter noise
+- The **learner** (DQN) trains purely from the replay buffer, on extrinsic reward only
+- The **novelty signal** (optional, episodic KNN bonus) biases which actor experiences enter the buffer
+
+This separation means:
+- Actor and learner are independently swappable (ES ↔ A3C, DQN ↔ SAC)
+- Novelty is purely internal to the actor — the learner trains on clean extrinsic reward
+- We can test ES, novelty, and combinations independently (DQN, ES+DQN, EDER)
 
 ---
 
@@ -219,32 +103,32 @@ Requires Python ≥ 3.12. Core dependencies: `torch`, `gymnasium`, `numpy`.
 
 ---
 
-## Fastest path to results
+## Fastest Path to Understanding the Research
 
-**Run the main CartPole comparison:**
-
-```bash
-poetry run python experiments/cartpole_efficiency.py --show
-```
-
-This will:
-
-- train all missing seeds for `EDER`, `ES+DQN`, and `DQN`
-- save per-run CSVs and configs under `runs/cartpole_efficiency/`
-- save an aggregate plot to `runs/cartpole_efficiency/comparison.png`
-- open the plot window if `--show` is passed
-
-**Re-open the same plot later without retraining:**
+**Run DQN baseline across the 5-environment spectrum:**
 
 ```bash
-poetry run python experiments/cartpole_efficiency.py --plot-only --show
+python experiments/baseline_dqn.py --all --show
 ```
 
-**Run the LunarLander comparison:**
+This trains DQN on CartPole, LunarLander, CartPole-sparse, and Acrobot (3 seeds each, ~30-45 min total). This establishes ground truth for where exploration is the bottleneck.
+
+**Run one environment at a time:**
 
 ```bash
-poetry run python experiments/lunarlander_efficiency.py --show
+python experiments/baseline_dqn.py --env cartpole --show        # ~5 min
+python experiments/baseline_dqn.py --env lunarlander --show     # ~20 min
+python experiments/baseline_dqn.py --env cartpole_sparse --show # ~5 min
+python experiments/baseline_dqn.py --env acrobot --show         # ~15 min
 ```
+
+**Plot existing results without retraining:**
+
+```bash
+python experiments/baseline_dqn.py --env cartpole --plot-only --show
+```
+
+Results appear under `runs/cartpole_baseline_dqn/` and are automatically aggregated as `comparison.png`.
 
 ---
 
@@ -340,6 +224,7 @@ This section is generated from the files in `experiments/`.
 | `cartpole_sample_efficiency.py` | CartPole-v1 | Fair sample efficiency comparison: equal env-step budget across conditions. |
 | `cartpole_sigma_sweep.py` | CartPole-v1 | CartPole-v1 Normal: Diagnostic sweep for optimal es_sigma. |
 | `cartpole_tough.py` | CartPole-v1 | CartPole-Tough: Real robustness test for learned control. |
+| `diagnostic_phase_123_35.py` | CartPole-v1 | Diagnostic experiment: Phase 1-4 + Phase 3.1+3.2+3.3 smoke test. |
 | `lunarlander_efficiency.py` | LunarLander-v3 | Does EDER generalise to LunarLander, and does the buffer filter fix forgetting? |
 | `lunarlander_normal.py` | LunarLander-v3 | LunarLander-v3 Normal: Standard benchmark on longer-horizon task. |
 | `lunarlander_tough.py` | LunarLander-v3 | LunarLander-Tough: Real robustness test for precision landing control. |
