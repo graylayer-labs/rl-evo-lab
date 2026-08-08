@@ -140,7 +140,7 @@ class Experiment:
         force: bool = False,
         workers: int | None = None,
         show: bool = False,
-        x_axis: str = "episode",
+        x_axis: str = "env_steps",
         results_dir: str = _RUNS_DIR,
     ) -> Path:
         """Run all conditions and seeds, then save a comparison plot.
@@ -169,7 +169,7 @@ class Experiment:
     def plot(
         self,
         show: bool = False,
-        x_axis: str = "episode",
+        x_axis: str = "env_steps",
         results_dir: str = _RUNS_DIR,
     ) -> Path:
         """Re-plot from existing runs without re-training."""
@@ -218,7 +218,12 @@ class Experiment:
         p.add_argument("--force", action="store_true", help="Delete and re-run existing results")
         p.add_argument("--show", action="store_true", help="Open the plot after saving")
         p.add_argument("--workers", type=int, default=None, help="Max parallel processes")
-        p.add_argument("--x-axis", choices=["episode", "env_steps"], default="episode")
+        p.add_argument(
+            "--x-axis",
+            choices=["episode", "env_steps"],
+            default="env_steps",
+            help="X-axis for plots: 'env_steps' is fair for ES comparisons (default)",
+        )
         p.add_argument("--plot-only", action="store_true", help="Re-plot without re-training")
         args = p.parse_args()
 

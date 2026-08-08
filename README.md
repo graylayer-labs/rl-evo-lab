@@ -1,42 +1,52 @@
-# rl-evo-lab: When Can Novelty and Evolution Strategies Improve RL?
+# Novelty-Guided Evolutionary RL
 
 ## Research Question
 
-**In exploration-stuck environments, does novelty-driven search and/or evolutionary strategies actually improve RL — or are they overhead?**
+**In exploration-stuck environments, can novelty-driven search and/or evolutionary strategies actually improve RL — or are they overhead?**
 
-This work evaluates **EDER** (Evolutionary Distributed Experience Replay) — a hybrid algorithm combining an ES actor population, DQN learner, and KNN-based novelty bonus — against three simpler variants to answer: which techniques (if any) break through when RL gets stuck?
+This thesis evaluates three algorithmic approaches to see which techniques (if any) solve the exploration problem:
+- **Pure RL** (DQN with ε-greedy) — baseline
+- **Evolutionary RL** (ES actor + DQN learner, no intrinsic motivation) — isolation of ES
+- **Novelty-Guided RL** (ES + novelty-based intrinsic reward) — full hybrid approach
 
-### The Four Methods
-1. **DQN** — Pure epsilon-greedy baseline (RL baseline)
-2. **ES+DQN** — ES population, no novelty (evolution without intrinsic motivation)
-3. **EDER** — ES + novelty signal (both techniques combined)
+### Three Methods Under Test
+1. **DQN** — Pure gradient-based learning (ε-greedy baseline)
+   - What it tests: Can standard RL solve exploration-stuck tasks?
 
-We test these across an environment spectrum specifically chosen to show where standard RL fails and what combination of techniques succeeds.
+2. **Evolutionary RL (ES+DQN)** — ES population + DQN learner, no intrinsic reward
+   - What it tests: Does population diversity alone compensate for sparse reward?
+
+3. **Novelty-Guided RL** — ES population + DQN learner + novelty-based intrinsic reward
+   - What it tests: Does adding intrinsic motivation improve exploration further?
+
+We test across a spectrum of environments specifically chosen to show where standard RL fails and what techniques succeed.
 
 ---
 
-## Current Status: Phase 2 — DQN Baseline Complete ✓
+## Phase 2: DQN Baseline Complete ✓ | Phase 3: Ready to Begin
 
-| Environment | Type | DQN Mean | Threshold | Solved? | What This Tests |
+### Baseline Results (DQN Only)
+
+| Environment | Type | DQN Mean | Target | Result | Next Test |
 |---|---|---|---|---|---|
-| CartPole-v1 | Dense baseline | 151.7 | 475.0 | ❌ Struggles | Does complexity add overhead? |
-| LunarLander-v3 | Dense precision | 215.5 | 200.0 | ✅ Yes | Does novelty hurt precision? |
-| CartPole-sparse | Sparse discovery | 0.0 | 475.0 | ❌ Fails | Can ES bridge zero-gradient gap? |
-| Acrobot-v1 | Sparse discovery | -500.0 | -100.0 | ❌ Fails | Can novelty guide rare strategies? |
-| Montezuma's Revenge | Hard exploration | — | — | — | Can combined approach find any signal? |
+| CartPole-v1 | Dense | 151.7 | 475 | ❌ 32% | ES alone? Novelty-guided? |
+| LunarLander-v3 | Dense | 215.5 | 200 | ✅ Solved | Does novelty add overhead? |
+| CartPole-sparse | Sparse | 0.0 | 475 | ❌ 0% | Does ES bridge the gap? |
+| Acrobot-v1 | Sparse | -500 | -100 | ❌ 0% | Can novelty guide discovery? |
+| Montezuma's Revenge | Hard | — | — | — | Deferred (after Phase 3) |
 
-**Key finding:** DQN fails on sparse tasks (CartPole-sparse, Acrobot) and barely solves dense tasks (CartPole). This shows **where ES and/or novelty would need to add value**.
+### What the Baseline Shows
 
-### What the Baseline Tells Us
+- **Dense tasks (CartPole, LunarLander)**: DQN struggles or barely succeeds → test if ES/novelty add overhead
+- **Sparse tasks (CartPole-sparse, Acrobot)**: DQN fails completely → this is where exploration techniques must prove value
+- **Clear baseline**: Ground truth showing exactly where and why RL gets stuck
 
-| Result | Implication |
-|---|---|
-| **CartPole**: DQN reaches 151.7/475 (32%) | Dense task, but still hard for pure ε-greedy. ES population diversity might help. |
-| **LunarLander**: DQN solves at 215.5 > 200 | Dense reward works; precision control doesn't need novelty. If EDER fails here, novelty adds overhead. |
-| **CartPole-sparse**: DQN gets 0 reward | Sparse tasks are impossible for gradient-based learning. ES diversity is essential here. Does novelty improve ES further? |
-| **Acrobot**: DQN reaches -500 (max penalty) | Discovery task; no progress without better exploration. Both ES and novelty should help. |
-
-**Next phase:** Run ES+DQN and EDER on this same spectrum. Compare by environment steps (fair) to see which techniques actually solve the problems DQN can't.
+### Phase 3 Plan (Next)
+Run **Evolutionary RL** and **Novelty-Guided RL** on the same 4 environments:
+1. Compare ES alone vs. DQN (shows ES impact)
+2. Compare Novelty-Guided vs. ES alone (shows novelty impact)
+3. Compare Novelty-Guided vs. DQN (shows combined impact)
+4. All comparisons use environment steps (fair compute budget)
 
 See [ENVIRONMENTS.md](ENVIRONMENTS.md) for detailed hypotheses and rationale.
 

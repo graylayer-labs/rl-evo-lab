@@ -64,6 +64,34 @@ class CartPoleToughWrapper(gym.Wrapper):
         return obs, reward, terminated, truncated, info
 
 
+class CartPoleSparseWrapper(gym.Wrapper):
+    """CartPole with sparse reward: 0 per step, +500 only at success."""
+
+    def __init__(self, env, cfg=None):
+        super().__init__(env)
+        self.step_count = 0
+        self.max_steps = 500  # CartPole-v1 default episode length
+
+    def reset(self, seed=None, **kwargs):
+        obs, info = self.env.reset(seed=seed, **kwargs)
+        self.step_count = 0
+        return obs, info
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        self.step_count += 1
+
+        # Sparse reward: 0 per step, +500 only if reached step limit without early termination
+        if truncated and not terminated:
+            # Reached step limit (success)
+            reward = 500.0
+        else:
+            # Any other outcome: early termination or ongoing
+            reward = 0.0
+
+        return obs, reward, terminated, truncated, info
+
+
 class LunarLanderToughWrapper(gym.Wrapper):
     """LunarLander with random starting state, tight landing zone, and extended episodes."""
 
@@ -135,21 +163,26 @@ class LunarLanderToughWrapper(gym.Wrapper):
 
 
 def make_env_with_config(env_id: str, cfg) -> gym.Env:
-    """Create environment, applying tough-variant wrappers if needed.
+    """Create environment, applying tough-variant or sparse wrappers if needed.
 
     When using tough wrappers, max_episode_steps is disabled (None) to allow
     the wrapper's custom episode limit to take effect.
     """
-    # Disable the base TimeLimit when using tough wrappers so the wrapper's limit is used
+    # Check for variant flags
     is_tough = hasattr(cfg, "_tough") and cfg._tough
+    is_sparse = hasattr(cfg, "_sparse") and cfg._sparse
+
     make_kwargs = {"render_mode": None}
     if is_tough:
         make_kwargs["max_episode_steps"] = None
 
     env = gym.make(env_id, **make_kwargs)
 
-    # Apply tough variant wrappers based on config flags, passing cfg for dynamic configuration
-    if is_tough:
+    # Apply variant wrappers based on config flags
+    if is_sparse:
+        if "CartPole" in env_id:
+            env = CartPoleSparseWrapper(env, cfg)
+    elif is_tough:
         if "CartPole" in env_id:
             env = CartPoleToughWrapper(env, cfg)
         elif "LunarLander" in env_id:
