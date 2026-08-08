@@ -1,6 +1,6 @@
 # Phase 3 Findings: Which Techniques Actually Solve Exploration-Stuck Tasks?
 
-**Status:** 10/12 runs complete (CartPole-sparse & Acrobot Novelty-Guided pending)
+**Status:** 11/12 runs complete (Acrobot Novelty-Guided incomplete due to kill)
 
 ---
 
