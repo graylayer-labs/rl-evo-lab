@@ -100,14 +100,9 @@ This isolates **which technique(s) actually solve exploration-stuck problems**.
 
 ## Documentation
 
-**For Users:**
 - **[docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md)** — Why this 5-environment spectrum? Testing methodology and explicit hypotheses.
 
-**For Team/Contributors:**
-- **[docs/internal/PHASE_STATUS.md](docs/internal/PHASE_STATUS.md)** — Current research phase, progress, findings, ETA
-- **[docs/internal/WORK_LOG.md](docs/internal/WORK_LOG.md)** — Session notes, decisions, implementation log
-- **[docs/internal/CLAUDE.md](docs/internal/CLAUDE.md)** — Architecture notes, design invariants, AI assistant guidance
-- **[docs/internal/CHANGELOG.md](docs/internal/CHANGELOG.md)** — Historical change log
+For implementation details, architecture notes, and decision history, see git log and code comments.
 
 ---
 
