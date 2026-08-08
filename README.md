@@ -74,7 +74,7 @@ runs/cartpole_novelty_guided_rl/comparison.png
 
 Stack these plots side-by-side to see all three methods on CartPole.
 
-See [ENVIRONMENTS.md](ENVIRONMENTS.md) for detailed hypotheses and rationale.
+See [docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md) for detailed hypotheses and rationale.
 
 ---
 
@@ -100,8 +100,14 @@ This isolates **which technique(s) actually solve exploration-stuck problems**.
 
 ## Documentation
 
-- **[ENVIRONMENTS.md](ENVIRONMENTS.md)** — Why each environment, what we expect to see, compute budget
-- **[WORK_LOG.md](WORK_LOG.md)** — Internal session notes (not for readers; tracks decisions and next steps)
+**For Users:**
+- **[docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md)** — Why this 5-environment spectrum? Testing methodology and explicit hypotheses.
+
+**For Team/Contributors:**
+- **[docs/internal/PHASE_STATUS.md](docs/internal/PHASE_STATUS.md)** — Current research phase, progress, findings, ETA
+- **[docs/internal/WORK_LOG.md](docs/internal/WORK_LOG.md)** — Session notes, decisions, implementation log
+- **[docs/internal/CLAUDE.md](docs/internal/CLAUDE.md)** — Architecture notes, design invariants, AI assistant guidance
+- **[docs/internal/CHANGELOG.md](docs/internal/CHANGELOG.md)** — Historical change log
 
 ---
 
