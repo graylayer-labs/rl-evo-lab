@@ -43,3 +43,7 @@ ty = "^0.0.26"
 dev = [
     "pygame>=2.6.1",
 ]
+
+[tool.ruff]
+extend-config = ["https://raw.githubusercontent.com/graylayer-labs/.github/main/ruff.toml"]
+target-version = "py311"
