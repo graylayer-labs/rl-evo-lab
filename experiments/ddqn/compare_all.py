@@ -13,8 +13,8 @@ Usage:
     # Compare specific environments
     python experiments/ddqn/compare_all.py --envs cartpole lunarlander --show
 
-    # Generate summary table of all results
-    python experiments/ddqn/compare_all.py --summary
+For a results summary, use `python scripts/build_results.py` — it reads the
+authoritative post-training final_eval, not a training-time checkpoint.
 """
 
 from pathlib import Path
@@ -30,9 +30,9 @@ def run_comparison(env_name: str, show: bool = False, force: bool = False):
     # Define conditions (DDQN, DDQN+ES, DDQN+Novelty, DDQN+ES+Novelty)
     conditions = [
         Condition("DDQN", use_es=False, use_novelty=False),
-        Condition("Evolutionary RL", use_es=True, use_novelty=False),
+        Condition("DDQN+ES", use_es=True, use_novelty=False),
         Condition("DDQN+Novelty", use_es=False, use_novelty=True),
-        Condition("Novelty-Guided RL", use_es=True, use_novelty=True),
+        Condition("DDQN+ES+Novelty", use_es=True, use_novelty=True),
     ]
 
     exp = Experiment(
@@ -54,57 +54,6 @@ def run_comparison(env_name: str, show: bool = False, force: bool = False):
         print(f"\n✓ Comparison plot saved: {plot_path}")
 
     return exp
-
-
-def generate_summary():
-    """Generate a summary table of all results."""
-
-    print("\n" + "="*80)
-    print("RESULTS SUMMARY")
-    print("="*80 + "\n")
-
-    for env in _ENVS:
-        print(f"\n{env.upper()}")
-        print("-" * 60)
-
-        for method, run_prefix in [
-            ("DDQN", "baseline_dqn"),
-            ("Evolutionary RL", "evolutionary_rl"),
-            ("DDQN+Novelty", "novelty_only_rl"),
-            ("Novelty-Guided RL", "novelty_guided_rl"),
-        ]:
-            run_dir = Path(f"runs/{env}_{run_prefix}")
-            if not run_dir.exists():
-                print(f"  {method:20s} - NOT RUN YET")
-                continue
-
-            # Try to extract results from individual runs
-            seed_dirs = list(run_dir.glob("*__seed*"))
-            if seed_dirs:
-                final_rewards = []
-                for seed_dir in seed_dirs:
-                    metrics_file = seed_dir / "metrics.csv"
-                    if metrics_file.exists():
-                        # Get last line (final eval reward)
-                        with open(metrics_file) as f:
-                            lines = f.readlines()
-                            if len(lines) > 1:
-                                parts = lines[-1].strip().split(',')
-                                if len(parts) > 5:  # learner_eval_reward is column 5
-                                    try:
-                                        reward = float(parts[5])
-                                        final_rewards.append(reward)
-                                    except ValueError:
-                                        pass
-
-                if final_rewards:
-                    mean = sum(final_rewards) / len(final_rewards)
-                    std = (sum((r - mean)**2 for r in final_rewards) / len(final_rewards))**0.5
-                    print(f"  {method:20s} {mean:8.1f} ± {std:6.1f}")
-                else:
-                    print(f"  {method:20s} - INCOMPLETE")
-            else:
-                print(f"  {method:20s} - NOT STARTED")
 
 
 def main():
@@ -142,17 +91,7 @@ def main():
         action="store_true",
         help="Re-run even if results exist.",
     )
-    parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Print summary table of all results (no experiments run).",
-    )
-
     args = parser.parse_args()
-
-    if args.summary:
-        generate_summary()
-        return
 
     # Determine which environments to compare
     envs_to_compare = []
@@ -178,7 +117,7 @@ def main():
         print(f"  runs/{env_name}_all_methods_comparison/comparison.png")
 
     print("\nTo view results summary:")
-    print("  python experiments/ddqn/compare_all.py --summary")
+    print("  python scripts/build_results.py")
 
 
 if __name__ == "__main__":

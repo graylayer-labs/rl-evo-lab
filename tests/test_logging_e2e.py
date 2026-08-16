@@ -90,3 +90,8 @@ def test_train_logs_compute_metrics():
         assert status["total_wall_clock_seconds"] > 0, (
             f"total_wall_clock_seconds should be > 0, got {status['total_wall_clock_seconds']}"
         )
+
+        assert "final_eval" in status, f"final_eval field missing in {status}"
+        final_eval = status["final_eval"]
+        assert final_eval["n_episodes"] == cfg.final_eval_episodes
+        assert len(final_eval["episode_rewards"]) == cfg.final_eval_episodes

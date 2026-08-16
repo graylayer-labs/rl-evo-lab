@@ -46,14 +46,23 @@ class DQNLearner:
 
         return loss.item()
 
-    def evaluate(self, env: gym.Env, n_episodes: int) -> float:
+    def evaluate_episodes(
+        self, env: gym.Env, n_episodes: int, seed_offset: int = 10_000
+    ) -> list[float]:
+        """Run n_episodes with the greedy policy, returning each episode's total reward.
+
+        seed_offset selects a disjoint block of deterministic eval seeds
+        (cfg.seed + seed_offset + i) — periodic training-time eval and the
+        post-training final eval use different offsets so they never reuse
+        the same episodes.
+        """
         self.policy_net.eval()
-        total = 0.0
+        rewards: list[float] = []
         for eval_idx in range(n_episodes):
-            # Deterministic eval seed: ensures reproducible eval trajectory
-            eval_seed = self.cfg.seed + 10_000 + eval_idx
+            eval_seed = self.cfg.seed + seed_offset + eval_idx
             obs, _ = env.reset(seed=eval_seed)
             done = False
+            total = 0.0
             while not done:
                 with torch.no_grad():
                     obs_t = torch.from_numpy(obs).float().unsqueeze(0).to(self.device)
@@ -61,8 +70,13 @@ class DQNLearner:
                 obs, reward, terminated, truncated, _ = env.step(action)
                 done = terminated or truncated
                 total += reward
+            rewards.append(total)
         self.policy_net.train()
-        return total / n_episodes
+        return rewards
+
+    def evaluate(self, env: gym.Env, n_episodes: int) -> float:
+        rewards = self.evaluate_episodes(env, n_episodes)
+        return sum(rewards) / n_episodes
 
     def collect_episode(
         self, env: gym.Env, buffer: ReplayBuffer, episode: int

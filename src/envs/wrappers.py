@@ -1,7 +1,29 @@
 """Environment wrappers for tough variants."""
 
+import os
+from pathlib import Path
+
+import ale_py
 import gymnasium as gym
 import numpy as np
+
+# ale-py doesn't auto-register its envs under the ALE/ namespace on import in
+# this gymnasium/ale-py version combo — without this, gym.make("ALE/...")
+# raises NamespaceNotFound. Must happen before any gym.make("ALE/...") call.
+gym.register_envs(ale_py)
+
+# ale-py looks for ROM .bin files next to itself by default, but AutoROM (the
+# `uv sync` dependency that downloads them, since Atari ROMs can't be
+# redistributed directly) installs them into its own package instead. Point
+# ale-py at AutoROM's install location so `uv run AutoROM --accept-license`
+# is the only setup step needed — no manual file copying.
+if "ALE_ROMS_DIR" not in os.environ:
+    try:
+        import AutoROM
+
+        os.environ["ALE_ROMS_DIR"] = str(Path(AutoROM.__file__).parent / "roms")
+    except ImportError:
+        pass
 
 
 class CartPoleToughWrapper(gym.Wrapper):
@@ -175,6 +197,9 @@ def make_env_with_config(env_id: str, cfg) -> gym.Env:
     make_kwargs = {"render_mode": None}
     if is_tough:
         make_kwargs["max_episode_steps"] = None
+    if env_id.startswith("ALE/"):
+        # Flat 128-byte RAM observation (not the default image frame).
+        make_kwargs["obs_type"] = "ram"
 
     env = gym.make(env_id, **make_kwargs)
 

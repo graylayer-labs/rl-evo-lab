@@ -10,6 +10,23 @@ from envs.wrappers import (
 from infra.config import make_config
 
 
+def test_montezuma_env_id_registered():
+    """Importing envs.wrappers must register the ALE namespace (ale-py doesn't
+    auto-register on import in this gymnasium/ale-py version combo), or
+    make_env_with_config('ALE/MontezumaRevenge-v5', ...) fails outright."""
+    gym.spec("ALE/MontezumaRevenge-v5")  # raises if not registered
+
+
+def test_montezuma_ram_observation():
+    """Montezuma uses RAM (128-byte flat) observations, selected via obs_type,
+    not a separate '-ram' env id (that id doesn't exist in this ale-py version)."""
+    cfg = make_config("montezuma")
+    env = make_env_with_config(cfg.env_id, cfg)
+    obs, _ = env.reset(seed=0)
+    assert obs.shape == (128,), f"Expected 128-byte RAM observation, got shape {obs.shape}"
+    env.close()
+
+
 def test_cartpole_tough_wrapper_extended_episode_length():
     """Test that CartPoleToughWrapper respects extended episode limit."""
     env = gym.make("CartPole-v1", render_mode=None, max_episode_steps=None)
