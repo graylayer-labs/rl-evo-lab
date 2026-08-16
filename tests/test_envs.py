@@ -2,8 +2,12 @@
 
 import gymnasium as gym
 
-from rl_evo_lab.envs import CartPoleToughWrapper, LunarLanderToughWrapper, make_env_with_config
-from rl_evo_lab.utils.config import make_config
+from envs.wrappers import (
+    CartPoleToughWrapper,
+    LunarLanderToughWrapper,
+    make_env_with_config,
+)
+from infra.config import make_config
 
 
 def test_cartpole_tough_wrapper_extended_episode_length():

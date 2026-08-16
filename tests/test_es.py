@@ -5,13 +5,13 @@ import numpy as np
 import pytest
 import torch
 
-from rl_evo_lab.actor.es_actor import ESActor, _rank_normalize
-from rl_evo_lab.actor.es_worker import WorkerResult, run_worker_episode
-from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
-from rl_evo_lab.intrinsic.episodic_novelty import EpisodicNovelty
-from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
-from rl_evo_lab.learner.network import QNetwork
-from rl_evo_lab.utils.config import EDERConfig
+from actor.es_actor import ESActor, _rank_normalize
+from actor.es_worker import WorkerResult, run_worker_episode
+from buffer.replay_buffer import ReplayBuffer
+from infra.config import EDERConfig
+from intrinsic.episodic_novelty import EpisodicNovelty
+from intrinsic.inverse_dynamics import InverseDynamicsNetwork
+from learner.network import QNetwork
 
 # ---------------------------------------------------------------------------
 # 1. Rank normalisation
@@ -277,7 +277,7 @@ def test_idn_baseline_captured_after_warmup():
     silently if that episode had zero transitions. New code uses >= so it captures on
     the first non-empty episode at/after the warmup boundary.
     """
-    from rl_evo_lab.utils.config import make_config
+    from infra.config import make_config
 
     cfg = make_config("cartpole", novelty_warmup_episodes=3, es_n_workers=2)
     device = torch.device("cpu")
@@ -309,7 +309,7 @@ def test_idn_baseline_captured_after_warmup():
 
 def test_idn_beta_uses_baseline():
     """Effective beta should scale with IDN confidence once baseline is captured."""
-    from rl_evo_lab.utils.config import make_config
+    from infra.config import make_config
 
     cfg = make_config(
         "cartpole",
@@ -346,7 +346,7 @@ def test_idn_beta_uses_baseline():
 
 def test_effective_n_workers_always_even_with_antithetic():
     """Test that _effective_n_workers returns even when antithetic sampling is enabled."""
-    from rl_evo_lab.utils.config import make_config
+    from infra.config import make_config
 
     # Test with antithetic enabled
     cfg = make_config("cartpole", es_antithetic=True, es_n_workers=50, es_workers_min=4)
@@ -377,7 +377,7 @@ def test_effective_n_workers_always_even_with_antithetic():
 
 def test_effective_n_workers_odd_minimum_handled():
     """Test that odd es_workers_min is handled correctly when antithetic is enabled."""
-    from rl_evo_lab.utils.config import make_config
+    from infra.config import make_config
 
     # Even though default es_workers_min is 4, test with odd minimum
     cfg = make_config("cartpole", es_antithetic=True, es_n_workers=50, es_workers_min=5)
@@ -400,7 +400,7 @@ def test_effective_n_workers_odd_minimum_handled():
 
 def test_effective_n_workers_decays_correctly():
     """Test that n_workers decays smoothly from es_n_workers to es_workers_min."""
-    from rl_evo_lab.utils.config import make_config
+    from infra.config import make_config
 
     cfg = make_config("cartpole", es_antithetic=True, es_n_workers=50, es_workers_min=4)
     device = torch.device("cpu")

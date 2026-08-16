@@ -1,33 +1,35 @@
-"""Evolutionary RL baseline: ES actor + DQN learner, no intrinsic novelty.
+"""Novelty-Guided RL: ES actor + DQN learner + KNN novelty signal.
 
-Phase 3: Tests whether evolutionary strategy (population diversity) alone
-can improve RL on exploration-stuck environments, compared to DQN baseline.
+Phase 3: Tests whether adding intrinsic novelty motivation improves upon
+evolutionary strategy alone, particularly on sparse/discovery tasks.
 
-This isolates the ES contribution without novelty confounds.
+This combines both exploration techniques to test if they synergize.
 
 Environments (3 seeds each):
-  1. CartPole-v1          — dense, baseline cost
-  2. LunarLander-v3       — dense, precision test
-  3. CartPole-sparse      — sparse, zero-gradient discovery
-  4. Acrobot-v1           — sparse, rare behavior discovery
+  1. CartPole-v1          — dense, baseline overhead test
+  2. LunarLander-v3       — dense, precision test (should novelty hurt?)
+  3. CartPole-sparse      — sparse, discovery with intrinsic signal
+  4. Acrobot-v1           — sparse, rare behavior with novelty guidance
+  5. Montezuma's Revenge  — hard exploration, canonical novelty-search benchmark
 
 Run all environments:
-    python experiments/evolutionary_rl.py --all
+    python experiments/ddqn/es_novelty.py --all
 
 Run individual environments:
-    python experiments/evolutionary_rl.py --env cartpole
-    python experiments/evolutionary_rl.py --env lunarlander
-    python experiments/evolutionary_rl.py --env cartpole_sparse
-    python experiments/evolutionary_rl.py --env acrobot
+    python experiments/ddqn/es_novelty.py --env cartpole
+    python experiments/ddqn/es_novelty.py --env lunarlander
+    python experiments/ddqn/es_novelty.py --env cartpole_sparse
+    python experiments/ddqn/es_novelty.py --env acrobot
+    python experiments/ddqn/es_novelty.py --env montezuma
 
 Plot results:
-    python experiments/evolutionary_rl.py --env cartpole --plot-only --show
+    python experiments/ddqn/es_novelty.py --env cartpole --plot-only --show
 """
 
-from rl_evo_lab.experiment import Condition, Experiment
+from runner.experiment import Condition, Experiment
 
-# Evolutionary RL condition: use_es=True, use_novelty=False
-_evolutionary_rl = Condition("Evolutionary RL", use_es=True, use_novelty=False)
+# Novelty-Guided RL condition: use_es=True, use_novelty=True
+_novelty_guided_rl = Condition("Novelty-Guided RL", use_es=True, use_novelty=True)
 
 # Standard seeds for main environments (3 seeds each)
 _standard_seeds = [42, 7, 123]
@@ -35,28 +37,34 @@ _standard_seeds = [42, 7, 123]
 # Experiment registry: env -> experiment object
 _experiments = {
     "cartpole": Experiment(
-        name="cartpole_evolutionary_rl",
+        name="cartpole_novelty_guided_rl",
         env="cartpole",
         seeds=_standard_seeds,
-        conditions=[_evolutionary_rl],
+        conditions=[_novelty_guided_rl],
     ),
     "lunarlander": Experiment(
-        name="lunarlander_evolutionary_rl",
+        name="lunarlander_novelty_guided_rl",
         env="lunarlander",
         seeds=_standard_seeds,
-        conditions=[_evolutionary_rl],
+        conditions=[_novelty_guided_rl],
     ),
     "cartpole_sparse": Experiment(
-        name="cartpole_sparse_evolutionary_rl",
+        name="cartpole_sparse_novelty_guided_rl",
         env="cartpole_sparse",
         seeds=_standard_seeds,
-        conditions=[_evolutionary_rl],
+        conditions=[_novelty_guided_rl],
     ),
     "acrobot": Experiment(
-        name="acrobot_evolutionary_rl",
+        name="acrobot_novelty_guided_rl",
         env="acrobot",
         seeds=_standard_seeds,
-        conditions=[_evolutionary_rl],
+        conditions=[_novelty_guided_rl],
+    ),
+    "montezuma": Experiment(
+        name="montezuma_novelty_guided_rl",
+        env="montezuma",
+        seeds=_standard_seeds,
+        conditions=[_novelty_guided_rl],
     ),
 }
 
@@ -65,7 +73,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Run Evolutionary RL (ES+DQN) across the 4-environment spectrum."
+        description="Run Novelty-Guided RL (ES+novelty) across the 4-environment spectrum."
     )
     parser.add_argument(
         "--env",
@@ -104,7 +112,7 @@ def main():
     if args.all:
         for env_name in _experiments:
             print(f"\n{'='*60}")
-            print(f"Running Evolutionary RL on {env_name}")
+            print(f"Running Novelty-Guided RL on {env_name}")
             print(f"{'='*60}\n")
             exp = _experiments[env_name]
             if args.plot_only:

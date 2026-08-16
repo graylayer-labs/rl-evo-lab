@@ -8,9 +8,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
-from rl_evo_lab.learner.network import QNetwork
-from rl_evo_lab.utils.config import EDERConfig
+from buffer.replay_buffer import ReplayBuffer
+from infra.config import EDERConfig
+from learner.network import QNetwork
 
 
 class DQNLearner:

@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from rl_evo_lab.train import _compute_sync_threshold, train
-from rl_evo_lab.utils.config import EDERConfig
+from infra.config import EDERConfig
+from runner.train import _compute_sync_threshold, train
 
 
 def test_short_run(tmp_path: Path):

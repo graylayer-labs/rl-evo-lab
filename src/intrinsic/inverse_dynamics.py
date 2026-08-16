@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from rl_evo_lab.utils.config import EDERConfig
+from infra.config import EDERConfig
 
 
 class InverseDynamicsNetwork(nn.Module):

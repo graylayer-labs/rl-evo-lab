@@ -1,6 +1,6 @@
 """Plotting utilities and backward-compatible CLI.
 
-The experiment runner has moved to :mod:`rl_evo_lab.experiment`.
+The experiment runner has moved to :mod:`core.experiment`.
 Prefer running experiment scripts directly::
 
     python experiments/cartpole_efficiency.py
@@ -8,7 +8,7 @@ Prefer running experiment scripts directly::
 
 The CLI below is kept for backward compatibility::
 
-    poetry run python -m rl_evo_lab.utils.compare --experiment efficiency --env cartpole
+    uv run python -m infra.compare --experiment efficiency --env cartpole
 """
 
 from __future__ import annotations
@@ -21,10 +21,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from rl_evo_lab.utils.config import ENV_PRESETS
+from infra.config import ENV_PRESETS
 
 if TYPE_CHECKING:
-    from rl_evo_lab.experiment import Experiment
+    from runner.experiment import Experiment
 
 # ---------------------------------------------------------------------------
 # Plot config
@@ -298,12 +298,12 @@ def compare(
 
 def _make_registry() -> dict[str, dict[str, Experiment]]:
     """Build the experiment registry lazily to avoid import cycles."""
-    from rl_evo_lab.experiment import Condition, Experiment
+    from runner.experiment import Condition, Experiment
 
     _efficiency = [
         Condition("EDER", use_es=True, use_novelty=True),
         Condition("ES+DQN", use_es=True, use_novelty=False),
-        Condition("DQN", use_es=False, use_novelty=False),
+        Condition("DDQN", use_es=False, use_novelty=False),
     ]
     _eder_vs_baseline = [
         Condition("EDER", use_novelty=True),
@@ -312,19 +312,19 @@ def _make_registry() -> dict[str, dict[str, Experiment]]:
     _model_size = [
         Condition("EDER-64", use_es=True, use_novelty=True, hidden_dim=64),
         Condition("EDER-128", use_es=True, use_novelty=True, hidden_dim=128),
-        Condition("DQN-64", use_es=False, use_novelty=False, hidden_dim=64),
-        Condition("DQN-128", use_es=False, use_novelty=False, hidden_dim=128),
+        Condition("DDQN-64", use_es=False, use_novelty=False, hidden_dim=64),
+        Condition("DDQN-128", use_es=False, use_novelty=False, hidden_dim=128),
     ]
     _updates = [
         Condition("EDER-5upd", use_es=True, use_novelty=True, learner_updates_per_episode=5),
         Condition("EDER-20upd", use_es=True, use_novelty=True, learner_updates_per_episode=20),
-        Condition("DQN-5upd", use_es=False, use_novelty=False, learner_updates_per_episode=5),
-        Condition("DQN-20upd", use_es=False, use_novelty=False, learner_updates_per_episode=20),
+        Condition("DDQN-5upd", use_es=False, use_novelty=False, learner_updates_per_episode=5),
+        Condition("DDQN-20upd", use_es=False, use_novelty=False, learner_updates_per_episode=20),
     ]
     _sample_efficiency = [
         Condition("EDER", use_es=True, use_novelty=True),
         Condition("ES+DQN", use_es=True, use_novelty=False),
-        Condition("DQN", use_es=False, use_novelty=False, total_episodes=10_000),
+        Condition("DDQN", use_es=False, use_novelty=False, total_episodes=10_000),
     ]
 
     registry: dict[str, dict[str, Experiment]] = {}

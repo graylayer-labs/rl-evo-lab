@@ -1,33 +1,37 @@
-"""Compare all three methods (DQN, Evolutionary RL, Novelty-Guided RL) side-by-side.
+"""Compare all four methods (DDQN, DDQN+ES, DDQN+Novelty, DDQN+ES+Novelty) side-by-side.
 
-This script orchestrates comparison plots across the 4-environment spectrum,
-showing how each technique performs relative to the DQN baseline.
+This script orchestrates comparison plots across the 5-environment spectrum,
+showing how each technique performs relative to the DDQN baseline.
 
 Usage:
-    # Compare all three methods on CartPole
-    python experiments/compare_all_methods.py --env cartpole --show
+    # Compare all four methods on CartPole
+    python experiments/ddqn/compare_all.py --env cartpole --show
 
-    # Compare all four environments (generate all comparison plots)
-    python experiments/compare_all_methods.py --all-envs --show
+    # Compare all five environments (generate all comparison plots)
+    python experiments/ddqn/compare_all.py --all-envs --show
 
     # Compare specific environments
-    python experiments/compare_all_methods.py --envs cartpole lunarlander --show
+    python experiments/ddqn/compare_all.py --envs cartpole lunarlander --show
 
     # Generate summary table of all results
-    python experiments/compare_all_methods.py --summary
+    python experiments/ddqn/compare_all.py --summary
 """
 
 from pathlib import Path
-from rl_evo_lab.experiment import Condition, Experiment
+
+from runner.experiment import Condition, Experiment
+
+_ENVS = ["cartpole", "lunarlander", "cartpole_sparse", "acrobot", "montezuma"]
 
 
 def run_comparison(env_name: str, show: bool = False, force: bool = False):
-    """Run comparison of all three methods on a single environment."""
+    """Run comparison of all four methods on a single environment."""
 
-    # Define conditions (DQN, ES+DQN, Novelty-Guided)
+    # Define conditions (DDQN, DDQN+ES, DDQN+Novelty, DDQN+ES+Novelty)
     conditions = [
-        Condition("DQN", use_es=False, use_novelty=False),
+        Condition("DDQN", use_es=False, use_novelty=False),
         Condition("Evolutionary RL", use_es=True, use_novelty=False),
+        Condition("DDQN+Novelty", use_es=False, use_novelty=True),
         Condition("Novelty-Guided RL", use_es=True, use_novelty=True),
     ]
 
@@ -39,7 +43,7 @@ def run_comparison(env_name: str, show: bool = False, force: bool = False):
     )
 
     print(f"\n{'='*70}")
-    print(f"Comparing all three methods on {env_name}")
+    print(f"Comparing all four methods on {env_name}")
     print(f"{'='*70}\n")
 
     exp.run(force=force, show=show, x_axis="env_steps")
@@ -54,22 +58,19 @@ def run_comparison(env_name: str, show: bool = False, force: bool = False):
 
 def generate_summary():
     """Generate a summary table of all results."""
-    import json
 
     print("\n" + "="*80)
-    print("PHASE 3 RESULTS SUMMARY")
+    print("RESULTS SUMMARY")
     print("="*80 + "\n")
 
-    environments = ["cartpole", "lunarlander", "cartpole_sparse", "acrobot"]
-
-    results = {}
-    for env in environments:
+    for env in _ENVS:
         print(f"\n{env.upper()}")
         print("-" * 60)
 
         for method, run_prefix in [
-            ("DQN", "baseline_dqn"),
+            ("DDQN", "baseline_dqn"),
             ("Evolutionary RL", "evolutionary_rl"),
+            ("DDQN+Novelty", "novelty_only_rl"),
             ("Novelty-Guided RL", "novelty_guided_rl"),
         ]:
             run_dir = Path(f"runs/{env}_{run_prefix}")
@@ -78,7 +79,7 @@ def generate_summary():
                 continue
 
             # Try to extract results from individual runs
-            seed_dirs = list(run_dir.glob(f"*__seed*"))
+            seed_dirs = list(run_dir.glob("*__seed*"))
             if seed_dirs:
                 final_rewards = []
                 for seed_dir in seed_dirs:
@@ -110,23 +111,26 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Compare all three methods (DQN, ES+DQN, Novelty-Guided) across environments."
+        description=(
+            "Compare all four methods (DDQN, DDQN+ES, DDQN+Novelty, "
+            "DDQN+ES+Novelty) across environments."
+        )
     )
     parser.add_argument(
         "--env",
         help="Compare on a single environment.",
-        choices=["cartpole", "lunarlander", "cartpole_sparse", "acrobot"],
+        choices=_ENVS,
     )
     parser.add_argument(
         "--envs",
         nargs="+",
         help="Compare on specific environments.",
-        choices=["cartpole", "lunarlander", "cartpole_sparse", "acrobot"],
+        choices=_ENVS,
     )
     parser.add_argument(
         "--all-envs",
         action="store_true",
-        help="Compare on all four environments.",
+        help="Compare on all five environments.",
     )
     parser.add_argument(
         "--show",
@@ -153,7 +157,7 @@ def main():
     # Determine which environments to compare
     envs_to_compare = []
     if args.all_envs:
-        envs_to_compare = ["cartpole", "lunarlander", "cartpole_sparse", "acrobot"]
+        envs_to_compare = _ENVS
     elif args.envs:
         envs_to_compare = args.envs
     elif args.env:
@@ -174,7 +178,7 @@ def main():
         print(f"  runs/{env_name}_all_methods_comparison/comparison.png")
 
     print("\nTo view results summary:")
-    print("  python experiments/compare_all_methods.py --summary")
+    print("  python experiments/ddqn/compare_all.py --summary")
 
 
 if __name__ == "__main__":

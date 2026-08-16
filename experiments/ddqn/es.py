@@ -1,76 +1,70 @@
-"""DQN Baseline across 5-environment spectrum.
+"""Evolutionary RL baseline: ES actor + DQN learner, no intrinsic novelty.
 
-Thesis-style baseline: validate that DQN alone can solve dense-reward tasks
-before testing ES+DQN and EDER on the full environment spectrum.
+Phase 3: Tests whether evolutionary strategy (population diversity) alone
+can improve RL on exploration-stuck environments, compared to DQN baseline.
 
-This script establishes ground truth for "does exploration matter here" —
-a prerequisite for understanding whether novelty-driven ES adds value.
+This isolates the ES contribution without novelty confounds.
 
 Environments (3 seeds each):
-  1. CartPole-v1          — dense, trivial baseline
-  2. LunarLander-v3       — dense, continuous control
-  3. CartPole-sparse      — sparse (0/step, +500 at episode end)
-  4. Acrobot-v1           — sparse, discovery task
-
-Montezuma's Revenge (1 seed, capped):
-  5. MontezumaRevenge-ram-v5 — hard exploration, exploratory run only
+  1. CartPole-v1          — dense, baseline cost
+  2. LunarLander-v3       — dense, precision test
+  3. CartPole-sparse      — sparse, zero-gradient discovery
+  4. Acrobot-v1           — sparse, rare behavior discovery
+  5. Montezuma's Revenge  — hard exploration, canonical novelty-search benchmark
 
 Run all environments:
-    python experiments/baseline_dqn.py --all
+    python experiments/ddqn/es.py --all
 
 Run individual environments:
-    python experiments/baseline_dqn.py --env cartpole
-    python experiments/baseline_dqn.py --env lunarlander
-    python experiments/baseline_dqn.py --env cartpole_sparse
-    python experiments/baseline_dqn.py --env acrobot
-    python experiments/baseline_dqn.py --env montezuma
+    python experiments/ddqn/es.py --env cartpole
+    python experiments/ddqn/es.py --env lunarlander
+    python experiments/ddqn/es.py --env cartpole_sparse
+    python experiments/ddqn/es.py --env acrobot
+    python experiments/ddqn/es.py --env montezuma
 
 Plot results:
-    python experiments/baseline_dqn.py --env cartpole --plot-only --show
+    python experiments/ddqn/es.py --env cartpole --plot-only --show
 """
 
-from rl_evo_lab.experiment import Condition, Experiment
+from runner.experiment import Condition, Experiment
 
-# DQN baseline condition: use_es=False, use_novelty=False
-_dqn = Condition("DQN", use_es=False, use_novelty=False)
+# Evolutionary RL condition: use_es=True, use_novelty=False
+_evolutionary_rl = Condition("Evolutionary RL", use_es=True, use_novelty=False)
 
 # Standard seeds for main environments (3 seeds each)
 _standard_seeds = [42, 7, 123]
 
-# Montezuma's gets 1 seed with capped budget (exploratory baseline)
-_montezuma_seeds = [42]
-
 # Experiment registry: env -> experiment object
 _experiments = {
     "cartpole": Experiment(
-        name="cartpole_baseline_dqn",
+        name="cartpole_evolutionary_rl",
         env="cartpole",
         seeds=_standard_seeds,
-        conditions=[_dqn],
+        conditions=[_evolutionary_rl],
     ),
     "lunarlander": Experiment(
-        name="lunarlander_baseline_dqn",
+        name="lunarlander_evolutionary_rl",
         env="lunarlander",
         seeds=_standard_seeds,
-        conditions=[_dqn],
+        conditions=[_evolutionary_rl],
     ),
     "cartpole_sparse": Experiment(
-        name="cartpole_sparse_baseline_dqn",
+        name="cartpole_sparse_evolutionary_rl",
         env="cartpole_sparse",
         seeds=_standard_seeds,
-        conditions=[_dqn],
+        conditions=[_evolutionary_rl],
     ),
     "acrobot": Experiment(
-        name="acrobot_baseline_dqn",
+        name="acrobot_evolutionary_rl",
         env="acrobot",
         seeds=_standard_seeds,
-        conditions=[_dqn],
+        conditions=[_evolutionary_rl],
     ),
     "montezuma": Experiment(
-        name="montezuma_baseline_dqn",
+        name="montezuma_evolutionary_rl",
         env="montezuma",
-        seeds=_montezuma_seeds,
-        conditions=[_dqn],
+        seeds=_standard_seeds,
+        conditions=[_evolutionary_rl],
     ),
 }
 
@@ -79,7 +73,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Run DQN baseline across the 5-environment spectrum."
+        description="Run Evolutionary RL (ES+DQN) across the 4-environment spectrum."
     )
     parser.add_argument(
         "--env",
@@ -118,7 +112,7 @@ def main():
     if args.all:
         for env_name in _experiments:
             print(f"\n{'='*60}")
-            print(f"Running baseline on {env_name}")
+            print(f"Running Evolutionary RL on {env_name}")
             print(f"{'='*60}\n")
             exp = _experiments[env_name]
             if args.plot_only:

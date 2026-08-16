@@ -5,8 +5,8 @@ import tempfile
 import time
 from pathlib import Path
 
-from rl_evo_lab.utils.config import EDERConfig
-from rl_evo_lab.utils.logging import EpisodeLog, RunLogger
+from infra.config import EDERConfig
+from infra.logging import EpisodeLog, RunLogger
 
 
 def test_wall_clock_logging():

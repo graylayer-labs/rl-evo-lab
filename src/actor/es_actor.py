@@ -6,12 +6,12 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-from rl_evo_lab.actor.es_worker import WorkerResult, run_worker_episode
-from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
-from rl_evo_lab.intrinsic.episodic_novelty import EpisodicNovelty
-from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
-from rl_evo_lab.learner.network import QNetwork
-from rl_evo_lab.utils.config import EDERConfig
+from actor.es_worker import WorkerResult, run_worker_episode
+from buffer.replay_buffer import ReplayBuffer
+from infra.config import EDERConfig
+from intrinsic.episodic_novelty import EpisodicNovelty
+from intrinsic.inverse_dynamics import InverseDynamicsNetwork
+from learner.network import QNetwork
 
 
 @dataclass
