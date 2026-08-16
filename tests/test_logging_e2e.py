@@ -4,8 +4,8 @@ import json
 import tempfile
 from pathlib import Path
 
-from rl_evo_lab.train import train
-from rl_evo_lab.utils.config import EDERConfig
+from infra.config import EDERConfig
+from runner.train import train
 
 
 def test_train_logs_compute_metrics():
@@ -74,7 +74,7 @@ def test_train_logs_compute_metrics():
         assert status["status"] == "completed", f"Expected status=completed, got {status['status']}"
 
         assert "condition" in status, f"condition field missing in {status}"
-        assert status["condition"] == "DQN", f"Expected condition=DQN, got {status['condition']}"
+        assert status["condition"] == "DDQN", f"Expected condition=DDQN, got {status['condition']}"
 
         assert "total_env_steps" in status, f"total_env_steps field missing in {status}"
         assert isinstance(status["total_env_steps"], int), (

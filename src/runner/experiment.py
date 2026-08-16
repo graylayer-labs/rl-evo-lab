@@ -33,9 +33,9 @@ from rich.console import Console
 from rich.live import Live
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, TimeElapsedColumn
 
-from rl_evo_lab.train import train
-from rl_evo_lab.utils.config import EDERConfig, make_config
-from rl_evo_lab.utils.logging import _run_hash
+from infra.config import EDERConfig, make_config
+from infra.logging import _run_hash
+from runner.train import train
 
 _console = Console()
 _RUNS_DIR = "runs"
@@ -53,7 +53,7 @@ class Condition:
 
         Condition("EDER",   use_es=True,  use_novelty=True)
         Condition("ES+DQN", use_es=True,  use_novelty=False)
-        Condition("DQN",    use_es=False, use_novelty=False)
+        Condition("DDQN",    use_es=False, use_novelty=False)
         Condition("Big",    hidden_dim=256)
     """
 
@@ -106,7 +106,7 @@ class Experiment:
 
     Example::
 
-        from rl_evo_lab.experiment import Condition, Experiment
+        from runner.experiment import Condition, Experiment
 
         experiment = Experiment(
             name="cartpole_efficiency",
@@ -115,7 +115,7 @@ class Experiment:
             conditions=[
                 Condition("EDER",   use_es=True,  use_novelty=True),
                 Condition("ES+DQN", use_es=True,  use_novelty=False),
-                Condition("DQN",    use_es=False, use_novelty=False),
+                Condition("DDQN",    use_es=False, use_novelty=False),
             ],
         )
 
@@ -350,7 +350,7 @@ class Experiment:
         _console.print(f"  [bold green]✓[/bold green] {cond.label} — {mins}m {secs:02d}s\n")
 
     def _make_plot(self, show: bool, x_axis: str, results_dir: str) -> Path:
-        from rl_evo_lab.utils.compare import compare  # avoid circular import at module level
+        from infra.compare import compare  # avoid circular import at module level
 
         paths = self._paths(results_dir)
         out_dir = self._out_dir(results_dir)

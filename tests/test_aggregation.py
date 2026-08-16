@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from rl_evo_lab.utils.compare import _aggregate
+from infra.compare import _aggregate
 
 
 def test_aggregate_with_different_run_lengths():

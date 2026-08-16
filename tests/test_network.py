@@ -1,6 +1,6 @@
 import numpy as np
 
-from rl_evo_lab.learner.network import QNetwork
+from learner.network import QNetwork
 
 
 def test_flat_param_roundtrip():

@@ -2,7 +2,7 @@
 
 import pytest
 
-from rl_evo_lab.utils.config import ENV_CATEGORIES, ENV_PRESETS, EDERConfig, make_config
+from infra.config import ENV_CATEGORIES, ENV_PRESETS, EDERConfig, make_config
 
 
 class TestEnvCategoriesWired:

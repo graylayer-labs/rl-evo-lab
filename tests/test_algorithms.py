@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 import torch
 
-from rl_evo_lab.actor.es_actor import ESActor, _rank_normalize
-from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
-from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
-from rl_evo_lab.learner.dqn import DQNLearner
-from rl_evo_lab.utils.config import make_config
+from actor.es_actor import ESActor, _rank_normalize
+from buffer.replay_buffer import ReplayBuffer
+from infra.config import make_config
+from intrinsic.inverse_dynamics import InverseDynamicsNetwork
+from learner.dqn import DQNLearner
 
 
 class TestRankNormalize:

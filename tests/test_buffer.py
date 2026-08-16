@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
+from buffer.replay_buffer import ReplayBuffer
 
 
 def test_push_and_sample():

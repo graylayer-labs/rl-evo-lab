@@ -11,7 +11,17 @@ from typing import Any
 
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, TimeRemainingColumn
 
-from rl_evo_lab.utils.config import EDERConfig
+from infra.config import EDERConfig
+
+
+def _condition_label(use_es: bool, use_novelty: bool) -> str:
+    if use_es and use_novelty:
+        return "EDER"
+    if use_es:
+        return "DDQN+ES"
+    if use_novelty:
+        return "DDQN+Novelty"
+    return "DDQN"
 
 
 def _run_hash(cfg: EDERConfig) -> str:
@@ -82,7 +92,7 @@ class RunLogger:
         self._progress: Progress | None = None
         self._task_id = None
         if verbose and progress_queue is None:
-            mode = "EDER" if cfg.use_es and cfg.use_novelty else ("ES+DQN" if cfg.use_es else "DQN")
+            mode = _condition_label(cfg.use_es, cfg.use_novelty)
             desc = f"[cyan]{mode}[/cyan] seed={cfg.seed}"
             self._progress = Progress(
                 TextColumn("{task.description}"),
@@ -175,11 +185,7 @@ class RunLogger:
             self._wandb.finish()
 
         # Write compute summary to status.json
-        condition = (
-            "EDER"
-            if self.cfg.use_es and self.cfg.use_novelty
-            else ("ES+DQN" if self.cfg.use_es else "DQN")
-        )
+        condition = _condition_label(self.cfg.use_es, self.cfg.use_novelty)
         elapsed = time.time() - self._start_time
         compute_summary = {
             "status": "completed",

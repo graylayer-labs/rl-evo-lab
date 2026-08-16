@@ -5,14 +5,14 @@ from pathlib import Path
 
 import torch
 
-from rl_evo_lab.actor.es_actor import ESActor
-from rl_evo_lab.buffer.replay_buffer import ReplayBuffer
-from rl_evo_lab.envs import make_env_with_config
-from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
-from rl_evo_lab.learner.dqn import DQNLearner
-from rl_evo_lab.utils.config import EDERConfig
-from rl_evo_lab.utils.logging import EpisodeLog, RunLogger
-from rl_evo_lab.utils.seeding import seed_everything
+from actor.es_actor import ESActor
+from buffer.replay_buffer import ReplayBuffer
+from envs.wrappers import make_env_with_config
+from infra.config import EDERConfig
+from infra.logging import EpisodeLog, RunLogger
+from infra.seeding import seed_everything
+from intrinsic.inverse_dynamics import InverseDynamicsNetwork
+from learner.dqn import DQNLearner
 
 
 def _compute_sync_threshold(sync_eval_threshold: float, mean_extrinsic_return: float) -> float:

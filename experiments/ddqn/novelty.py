@@ -1,33 +1,35 @@
-"""Novelty-Guided RL: ES actor + DQN learner + KNN novelty signal.
+"""Novelty-Only RL: DDQN learner + KNN novelty signal, no ES population.
 
-Phase 3: Tests whether adding intrinsic novelty motivation improves upon
-evolutionary strategy alone, particularly on sparse/discovery tasks.
-
-This combines both exploration techniques to test if they synergize.
+Tests whether intrinsic novelty motivation improves exploration on its own,
+without the population diversity that ES provides. Isolates the novelty
+contribution from the ES contribution (see evolutionary_rl.py for the
+inverse isolation).
 
 Environments (3 seeds each):
   1. CartPole-v1          — dense, baseline overhead test
   2. LunarLander-v3       — dense, precision test (should novelty hurt?)
   3. CartPole-sparse      — sparse, discovery with intrinsic signal
   4. Acrobot-v1           — sparse, rare behavior with novelty guidance
+  5. Montezuma's Revenge  — hard exploration, canonical novelty-search benchmark
 
 Run all environments:
-    python experiments/novelty_guided_rl.py --all
+    python experiments/ddqn/novelty.py --all
 
 Run individual environments:
-    python experiments/novelty_guided_rl.py --env cartpole
-    python experiments/novelty_guided_rl.py --env lunarlander
-    python experiments/novelty_guided_rl.py --env cartpole_sparse
-    python experiments/novelty_guided_rl.py --env acrobot
+    python experiments/ddqn/novelty.py --env cartpole
+    python experiments/ddqn/novelty.py --env lunarlander
+    python experiments/ddqn/novelty.py --env cartpole_sparse
+    python experiments/ddqn/novelty.py --env acrobot
+    python experiments/ddqn/novelty.py --env montezuma
 
 Plot results:
-    python experiments/novelty_guided_rl.py --env cartpole --plot-only --show
+    python experiments/ddqn/novelty.py --env cartpole --plot-only --show
 """
 
-from rl_evo_lab.experiment import Condition, Experiment
+from runner.experiment import Condition, Experiment
 
-# Novelty-Guided RL condition: use_es=True, use_novelty=True
-_novelty_guided_rl = Condition("Novelty-Guided RL", use_es=True, use_novelty=True)
+# Novelty-Only condition: use_es=False, use_novelty=True
+_novelty_only = Condition("DDQN+Novelty", use_es=False, use_novelty=True)
 
 # Standard seeds for main environments (3 seeds each)
 _standard_seeds = [42, 7, 123]
@@ -35,28 +37,34 @@ _standard_seeds = [42, 7, 123]
 # Experiment registry: env -> experiment object
 _experiments = {
     "cartpole": Experiment(
-        name="cartpole_novelty_guided_rl",
+        name="cartpole_novelty_only_rl",
         env="cartpole",
         seeds=_standard_seeds,
-        conditions=[_novelty_guided_rl],
+        conditions=[_novelty_only],
     ),
     "lunarlander": Experiment(
-        name="lunarlander_novelty_guided_rl",
+        name="lunarlander_novelty_only_rl",
         env="lunarlander",
         seeds=_standard_seeds,
-        conditions=[_novelty_guided_rl],
+        conditions=[_novelty_only],
     ),
     "cartpole_sparse": Experiment(
-        name="cartpole_sparse_novelty_guided_rl",
+        name="cartpole_sparse_novelty_only_rl",
         env="cartpole_sparse",
         seeds=_standard_seeds,
-        conditions=[_novelty_guided_rl],
+        conditions=[_novelty_only],
     ),
     "acrobot": Experiment(
-        name="acrobot_novelty_guided_rl",
+        name="acrobot_novelty_only_rl",
         env="acrobot",
         seeds=_standard_seeds,
-        conditions=[_novelty_guided_rl],
+        conditions=[_novelty_only],
+    ),
+    "montezuma": Experiment(
+        name="montezuma_novelty_only_rl",
+        env="montezuma",
+        seeds=_standard_seeds,
+        conditions=[_novelty_only],
     ),
 }
 
@@ -65,7 +73,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Run Novelty-Guided RL (ES+novelty) across the 4-environment spectrum."
+        description="Run Novelty-Only RL (DDQN+Novelty) across the 5-environment spectrum."
     )
     parser.add_argument(
         "--env",
@@ -104,7 +112,7 @@ def main():
     if args.all:
         for env_name in _experiments:
             print(f"\n{'='*60}")
-            print(f"Running Novelty-Guided RL on {env_name}")
+            print(f"Running Novelty-Only RL on {env_name}")
             print(f"{'='*60}\n")
             exp = _experiments[env_name]
             if args.plot_only:

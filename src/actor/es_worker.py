@@ -5,10 +5,10 @@ from dataclasses import dataclass, field
 import numpy as np
 import torch
 
-from rl_evo_lab.intrinsic.episodic_novelty import EpisodicNovelty
-from rl_evo_lab.intrinsic.inverse_dynamics import InverseDynamicsNetwork
-from rl_evo_lab.learner.network import QNetwork
-from rl_evo_lab.utils.config import EDERConfig
+from infra.config import EDERConfig
+from intrinsic.episodic_novelty import EpisodicNovelty
+from intrinsic.inverse_dynamics import InverseDynamicsNetwork
+from learner.network import QNetwork
 
 
 @dataclass

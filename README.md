@@ -4,87 +4,60 @@
 
 **In exploration-stuck environments, can novelty-driven search and/or evolutionary strategies actually improve RL — or are they overhead?**
 
-This thesis evaluates three algorithmic approaches to see which techniques (if any) solve the exploration problem:
-- **Pure RL** (DQN with ε-greedy) — baseline
-- **Evolutionary RL** (ES actor + DQN learner, no intrinsic motivation) — isolation of ES
-- **Novelty-Guided RL** (ES + novelty-based intrinsic reward) — full hybrid approach
+This thesis evaluates a **2×2 factorial study** on top of Double DQN to see which
+techniques (if any) solve the exploration problem:
 
-### Three Methods Under Test
-1. **DQN** — Pure gradient-based learning (ε-greedy baseline)
+### Four Methods Under Test
+1. **DDQN** — Pure gradient-based learning (ε-greedy baseline)
    - What it tests: Can standard RL solve exploration-stuck tasks?
 
-2. **Evolutionary RL (ES+DQN)** — ES population + DQN learner, no intrinsic reward
+2. **DDQN + ES** — ES population + DDQN learner, no intrinsic reward
    - What it tests: Does population diversity alone compensate for sparse reward?
 
-3. **Novelty-Guided RL** — ES population + DQN learner + novelty-based intrinsic reward
-   - What it tests: Does adding intrinsic motivation improve exploration further?
+3. **DDQN + Novelty** — DDQN learner + novelty-based intrinsic reward, no ES
+   - What it tests: Does intrinsic motivation alone improve exploration?
 
-We test across a spectrum of environments specifically chosen to show where standard RL fails and what techniques succeed.
+4. **DDQN + ES + Novelty** — full hybrid approach
+   - What it tests: Do ES and novelty synergize, or does one dominate?
+
+We test across a spectrum of 5 environments (dense→sparse reward, easy→hard
+exploration) specifically chosen to show where standard RL fails and what
+techniques succeed. See [Study Design](#study-design) below.
 
 ---
 
-## Phase 2: DQN Baseline Complete ✓ | Phase 3: Ready to Begin
-
-### Baseline Results (DQN Only)
-
-| Environment | Type | DQN Mean | Target | Result | Next Test |
-|---|---|---|---|---|---|
-| CartPole-v1 | Dense | 151.7 | 475 | ❌ 32% | ES alone? Novelty-guided? |
-| LunarLander-v3 | Dense | 215.5 | 200 | ✅ Solved | Does novelty add overhead? |
-| CartPole-sparse | Sparse | 0.0 | 475 | ❌ 0% | Does ES bridge the gap? |
-| Acrobot-v1 | Sparse | -500 | -100 | ❌ 0% | Can novelty guide discovery? |
-| Montezuma's Revenge | Hard | — | — | — | Deferred (after Phase 3) |
-
-### What the Baseline Shows
-
-- **Dense tasks (CartPole, LunarLander)**: DQN struggles or barely succeeds → test if ES/novelty add overhead
-- **Sparse tasks (CartPole-sparse, Acrobot)**: DQN fails completely → this is where exploration techniques must prove value
-- **Clear baseline**: Ground truth showing exactly where and why RL gets stuck
-
-### Phase 3 Experimental Design
-
-Compare three approaches on the same environment spectrum:
+## Study Design
 
 | Method | What It Isolates | Expected Pattern |
 |---|---|---|
-| **DQN** (baseline) | Pure RL with ε-greedy | Fails on sparse tasks |
-| **Evolutionary RL** | ES population diversity alone | Helps on sparse? Overhead on dense? |
-| **Novelty-Guided RL** | ES + novelty signal combined | Better than ES alone? Synergize? |
+| **DDQN** (baseline) | Pure RL with ε-greedy | Fails on sparse tasks |
+| **DDQN + ES** | ES population diversity alone | Helps on sparse? Overhead on dense? |
+| **DDQN + Novelty** | Intrinsic motivation alone | Helps discovery without population cost? |
+| **DDQN + ES + Novelty** | ES + novelty signal combined | Better than either alone? Synergize? |
 
-**How to interpret Phase 3 results:**
+Environments: CartPole-v1, LunarLander-v3, CartPole-sparse, Acrobot-v1,
+MontezumaRevenge — each run across 3 seeds for all 4 methods (20 experiments
+total). All comparisons use **environment steps** (fair compute budget across
+methods).
 
-- **If Evolutionary RL >> DQN on CartPole-sparse**: ES diversity is key; novelty may not be needed
-- **If Novelty-Guided RL >> Evolutionary RL on CartPole-sparse**: Novelty guides ES effectively
-- **If both fail**: Mechanism doesn't work as theorized; deeper investigation needed
-- **If Novelty-Guided RL fails on LunarLander**: Intrinsic motivation hurts precision (adds overhead)
+### Status
 
-All comparisons use **environment steps** (fair compute budget across methods).
+No experiments have been run yet under this scope — `results/` is currently
+empty. All 20 experiments (4 methods × 5 environments × 3 seeds) are pending.
 
 ---
 
 ## If You Just Want Results
 
-Each environment's comparison plot is the primary artifact:
+Once experiments have run, see [`results/RESULTS.md`](results/RESULTS.md) for
+the full comparison table and [`results/`](results/) for per-environment
+comparison plots — this is the tracked, published source of truth (not the
+local `runs/` working directory, which holds raw per-seed logs and isn't
+checked into the repo). Regenerate `results/` at any point with:
 
+```bash
+uv run python scripts/build_results.py
 ```
-runs/cartpole_baseline_dqn/comparison.png
-runs/cartpole_evolutionary_rl/comparison.png
-runs/cartpole_novelty_guided_rl/comparison.png
-```
-
-Stack these plots side-by-side to see all three methods on CartPole.
-
-See [docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md) for detailed hypotheses and rationale.
-
----
-
-## What Each Algorithm Tests
-
-- **DQN alone fails where?** Identifies the exploration problem
-- **ES+DQN solves it?** If yes → ES diversity (population) is sufficient  
-- **Need novelty too?** If only EDER succeeds → intrinsic motivation is necessary
-
-This isolates **which technique(s) actually solve exploration-stuck problems**.
 
 ---
 
@@ -98,9 +71,15 @@ This isolates **which technique(s) actually solve exploration-stuck problems**.
 
 ---
 
-## Documentation
+## Environment Rationale
 
-- **[docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md)** — Why this 5-environment spectrum? Testing methodology and explicit hypotheses.
+| Tier | Environment | Why it's here |
+|---|---|---|
+| Dense baseline | CartPole-v1 | Trivial exploration; proves the baseline works |
+| Dense, precision | LunarLander-v3 | Continuous control; tests whether novelty adds overhead when precision matters |
+| Sparse, simple | CartPole-sparse | Zero per-step reward; isolates whether ES/novelty compensate for gradient starvation |
+| Sparse, discovery | Acrobot-v1 | Rare-behavior discovery; standard sparse-reward benchmark |
+| Hard exploration | Montezuma's Revenge (RAM) | Canonical novelty-search benchmark; falsification test for the whole thesis |
 
 For implementation details, architecture notes, and decision history, see git log and code comments.
 
@@ -111,15 +90,12 @@ For implementation details, architecture notes, and decision history, see git lo
 If you want to understand the repo fast and see a result immediately:
 
 1. Read the diagram in [Algorithm](#algorithm).
-2. Run `poetry install`.
-3. Run `poetry run python experiments/cartpole_efficiency.py --show`.
-4. Open `runs/cartpole_efficiency/comparison.png`.
+2. Run `uv sync`.
+3. Run `uv run python experiments/ddqn/baseline.py --env cartpole --plot-only --show`.
+4. Open the comparison plot it prints the path to.
 
-That first experiment compares the three core modes:
-
-- `EDER`: ES actor + DQN learner + novelty
-- `ES+DQN`: ES actor + DQN learner, no novelty
-- `DQN`: pure epsilon-greedy DQN baseline
+That first experiment is the DDQN baseline (ε-greedy, no ES, no novelty) —
+the ground truth every other condition is compared against.
 
 ---
 
@@ -128,57 +104,54 @@ That first experiment compares the three core modes:
 This codebase is built around a single, clean boundary:
 
 ```
-Actor (ES population)  →  [Shared Replay Buffer]  →  Learner (DQN)
+Actor (ES population)  →  [Shared Replay Buffer]  →  Learner (DDQN)
 ```
 
 - The **actor** (ES population of 50 policies) generates diverse experiences via parameter noise
-- The **learner** (DQN) trains purely from the replay buffer, on extrinsic reward only
+- The **learner** (DDQN) trains purely from the replay buffer, on extrinsic reward only
 - The **novelty signal** (optional, episodic KNN bonus) biases which actor experiences enter the buffer
 
 This separation means:
 - Actor and learner are independently swappable (ES ↔ A3C, DQN ↔ SAC)
 - Novelty is purely internal to the actor — the learner trains on clean extrinsic reward
-- We can test ES, novelty, and combinations independently (DQN, ES+DQN, EDER)
+- We can test ES, novelty, and combinations independently (DDQN, DDQN+ES, DDQN+Novelty, DDQN+ES+Novelty)
 
 ---
 
 ## Setup
 
 ```bash
-poetry install
-poetry run pytest        # verify everything works
+uv sync
+uv run pytest             # verify everything works
 ```
 
 Requires Python ≥ 3.12. Core dependencies: `torch`, `gymnasium`, `numpy`.
 
 ---
 
-## Running Phase 3: Complete the Comparison
+## Running Experiments
 
-DQN baselines are done. Now run the other two approaches to compare:
-
-**Option A: Run all three approaches on one environment**
+**Run one condition on one environment**
 ```bash
-# CartPole: see how DQN, ES, and novelty compare
-python experiments/baseline_dqn.py --env cartpole --plot-only --show
-python experiments/evolutionary_rl.py --env cartpole --show
-python experiments/novelty_guided_rl.py --env cartpole --show
+uv run python experiments/ddqn/baseline.py --env cartpole --show
+uv run python experiments/ddqn/es.py --env cartpole --show
+uv run python experiments/ddqn/es_novelty.py --env cartpole --show
 ```
 
-**Option B: Run full Phase 3 across all environments**
+**Run everything for one environment across conditions**
 ```bash
-python experiments/evolutionary_rl.py --all
-python experiments/novelty_guided_rl.py --all
+uv run python experiments/ddqn/es.py --all
+uv run python experiments/ddqn/es_novelty.py --all
 ```
 (This takes 1-2 hours for all seeds/envs. Run in parallel on multiple machines if available.)
 
-**Option C: Compare results without retraining**
+**Compare results without retraining**
 ```bash
-python experiments/evolutionary_rl.py --env cartpole --plot-only --show
-python experiments/novelty_guided_rl.py --env cartpole --plot-only --show
+uv run python experiments/ddqn/es.py --env cartpole --plot-only --show
+uv run python experiments/ddqn/es_novelty.py --env cartpole --plot-only --show
 ```
 
-Results generate comparison plots automatically (mean ± std across seeds) under `runs/`.
+Results generate comparison plots automatically (mean ± std across seeds) under `runs/` locally; final published numbers live in `results/`.
 
 ---
 
@@ -187,8 +160,8 @@ Results generate comparison plots automatically (mean ± std across seeds) under
 **Run a single training job:**
 
 ```python
-from rl_evo_lab.train import train
-from rl_evo_lab.utils.config import make_config
+from runner.train import train
+from infra.config import make_config
 
 cfg = make_config("lunarlander", seed=42)
 train(cfg)
@@ -200,7 +173,10 @@ Or from the command line using an experiment script (see below).
 
 ## Experiments
 
-Experiments live in `experiments/`. Each file defines:
+Experiments are grouped by base learner: `experiments/ddqn/` holds every
+condition built on DDQN. If the base learner is ever swapped or extended
+(e.g. SAC), it gets its own sibling directory (`experiments/sac/`) rather than
+disturbing this one. Each file defines:
 
 - an environment preset
 - a list of named conditions
@@ -212,10 +188,10 @@ Each experiment runs multiple seeds, caches completed runs, and writes a compari
 **Run any experiment:**
 
 ```bash
-poetry run python experiments/<name>.py            # run missing conditions, plot
-poetry run python experiments/<name>.py --force    # re-run everything from scratch
-poetry run python experiments/<name>.py --show     # open plot after saving
-poetry run python experiments/<name>.py --workers 4  # limit parallel processes
+uv run python experiments/ddqn/<name>.py            # run missing conditions, plot
+uv run python experiments/ddqn/<name>.py --force    # re-run everything from scratch
+uv run python experiments/ddqn/<name>.py --show     # open plot after saving
+uv run python experiments/ddqn/<name>.py --workers 4  # limit parallel processes
 ```
 
 Runs are **idempotent** — already-completed seeds are skipped unless `--force` is passed.
@@ -250,7 +226,7 @@ runs/<experiment_name>/<condition>__seed<seed>__<hash>/
 To generate a summary plot for one run:
 
 ```bash
-poetry run python -m rl_evo_lab.utils.plot runs/<path-to-run>/metrics.csv --show
+uv run python -m infra.plot runs/<path-to-run>/metrics.csv --show
 ```
 
 Use this when you want to inspect one seed rather than the mean/std aggregate.
@@ -259,26 +235,13 @@ Use this when you want to inspect one seed rather than the mean/std aggregate.
 
 ### Available experiments
 
-This section is generated from the files in `experiments/`.
-
-<!-- BEGIN AUTO:EXPERIMENTS -->
-| Script | Environment | Question |
+| Script | Compares | Environments |
 |---|---|---|
-| `acrobot_exploration.py` | Acrobot-v1 | Does EDER shine on hard exploration? Acrobot-v1 trial. |
-| `cartpole_beta_diagnostic.py` | CartPole-v1 | CartPole-v1 Beta Diagnostic: Find optimal novelty weight. |
-| `cartpole_eder_vs_baseline.py` | CartPole-v1 | Isolated novelty ablation: does IDN novelty help the ES actor? |
-| `cartpole_efficiency.py` | CartPole-v1 | Does the ES actor improve sample efficiency vs pure DQN on CartPole? |
-| `cartpole_model_size.py` | CartPole-v1 | Does ES diversity compensate for a smaller network? |
-| `cartpole_normal.py` | CartPole-v1 | CartPole-v1 Normal: Standard benchmark to validate baseline performance. |
-| `cartpole_novelty_ramp_diagnostic.py` | CartPole-v1 | CartPole Novelty Ramp Diagnostic: Quick 100-episode tests to identify ramp issue. |
-| `cartpole_sample_efficiency.py` | CartPole-v1 | Fair sample efficiency comparison: equal env-step budget across conditions. |
-| `cartpole_sigma_sweep.py` | CartPole-v1 | CartPole-v1 Normal: Diagnostic sweep for optimal es_sigma. |
-| `cartpole_tough.py` | CartPole-v1 | CartPole-Tough: Real robustness test for learned control. |
-| `diagnostic_phase_123_35.py` | CartPole-v1 | Diagnostic experiment: Phase 1-4 + Phase 3.1+3.2+3.3 smoke test. |
-| `lunarlander_efficiency.py` | LunarLander-v3 | Does EDER generalise to LunarLander, and does the buffer filter fix forgetting? |
-| `lunarlander_normal.py` | LunarLander-v3 | LunarLander-v3 Normal: Standard benchmark on longer-horizon task. |
-| `lunarlander_tough.py` | LunarLander-v3 | LunarLander-Tough: Real robustness test for precision landing control. |
-<!-- END AUTO:EXPERIMENTS -->
+| `ddqn/baseline.py` | DDQN alone | All 5 |
+| `ddqn/es.py` | DDQN + ES | All 5 |
+| `ddqn/novelty.py` | DDQN + Novelty | All 5 |
+| `ddqn/es_novelty.py` | DDQN + ES + Novelty | All 5 |
+| `ddqn/compare_all.py` | All 4 conditions side-by-side | Any single env or `--all-envs` |
 
 ---
 
@@ -286,13 +249,13 @@ This section is generated from the files in `experiments/`.
 
 If you want to understand the implementation without bouncing around:
 
-1. `src/rl_evo_lab/train.py`
-2. `src/rl_evo_lab/actor/es_actor.py`
-3. `src/rl_evo_lab/actor/es_worker.py`
-4. `src/rl_evo_lab/learner/dqn.py`
-5. `src/rl_evo_lab/intrinsic/inverse_dynamics.py`
-6. `src/rl_evo_lab/intrinsic/episodic_novelty.py`
-7. `src/rl_evo_lab/experiment.py`
+1. `src/runner/train.py`
+2. `src/actor/es_actor.py`
+3. `src/actor/es_worker.py`
+4. `src/learner/dqn.py`
+5. `src/intrinsic/inverse_dynamics.py`
+6. `src/intrinsic/episodic_novelty.py`
+7. `src/runner/experiment.py`
 
 That sequence follows the actual runtime path.
 
@@ -303,17 +266,17 @@ That sequence follows the actual runtime path.
 Create a file in `experiments/`. A condition accepts any `EDERConfig` field as a keyword override:
 
 ```python
-from rl_evo_lab.experiment import Condition, Experiment
+from runner.experiment import Condition, Experiment
 
 experiment = Experiment(
     name="my_experiment",
-    env="lunarlander",          # cartpole | lunarlander | acrobot | mountaincar
+    env="lunarlander",          # cartpole | lunarlander | cartpole_sparse | acrobot | montezuma
     seeds=[7, 42, 123],
     conditions=[
         Condition("EDER",          use_es=True,  use_novelty=True),
         Condition("EDER-filtered", use_es=True,  use_novelty=True,
                   buffer_push_alpha=0.5, buffer_push_top_k=7),
-        Condition("DQN",           use_es=False, use_novelty=False),
+        Condition("DDQN",           use_es=False, use_novelty=False),
     ],
 )
 
@@ -340,7 +303,7 @@ if __name__ == "__main__":
 └─────────────────────┬───────────────────────────────────┘
                       │  shared replay buffer
 ┌─────────────────────▼───────────────────────────────────┐
-│  Learner (DQN)                                           │
+│  Learner (DDQN)                                          │
 │                                                          │
 │  - Trains on extrinsic reward only                       │
 │  - Never interacts with the env during training          │
@@ -354,9 +317,9 @@ The replay buffer is the **only interface** between actor and learner.
 
 ## Key config options
 
-All options live in `EDERConfig` (`src/rl_evo_lab/utils/config.py`). Use `make_config(env, **overrides)` to build one from an env preset.
+All options live in `EDERConfig` (`src/infra/config.py`). Use `make_config(env, **overrides)` to build one from an env preset.
 
-This section is generated from `src/rl_evo_lab/utils/config.py`.
+This section is generated from `src/infra/config.py`.
 
 <!-- BEGIN AUTO:CONFIG -->
 | Parameter | Default | Notes |
@@ -383,7 +346,7 @@ This section is generated from `src/rl_evo_lab/utils/config.py`.
 
 ## Data & Reproducibility
 
-The source of truth for results is the generated output under `runs/`:
+`runs/` is local, working, per-seed training output — not tracked in git:
 
 - `runs/<experiment_name>/comparison.png` — comparison plot (mean ± std across seeds)
 - `runs/<experiment_name>/manifest.json` — experiment metadata and run registry
@@ -392,32 +355,42 @@ The source of truth for results is the generated output under `runs/`:
 
 Each experiment is fully reproducible: re-running the same script reruns only missing conditions and seeds; already-completed runs are skipped unless `--force` is passed.
 
+`results/` is the tracked, published subset of this data — final numbers only,
+regenerated from `runs/` once a set of conditions is complete.
+
 ---
 
 ## Repo structure
 
 ```
-src/rl_evo_lab/
-  actor/
+src/
+  actor/               # ES population — learner-agnostic
     es_actor.py       # ESActor: runs generations, ES update, buffer push filtering
     es_worker.py      # WorkerResult, run_worker_episode
-  learner/
-    dqn.py            # DQNLearner: train_step, evaluate, collect_episode
+  learner/             # base-learner-specific (currently DDQN only)
+    dqn.py            # DQNLearner: implements Double DQN (target/policy net decoupling)
     network.py        # QNetwork + FlatParamsMixin
-  buffer/
+  buffer/              # replay buffer — learner-agnostic
     replay_buffer.py  # ReplayBuffer with diversity_metric()
-  intrinsic/
+  intrinsic/           # novelty signal — learner-agnostic
     episodic_novelty.py     # EpisodicNovelty: KNN over embeddings (per-episode)
     inverse_dynamics.py     # InverseDynamicsNetwork: learns controllable-state embeddings
-  utils/
+  envs/
+    wrappers.py        # CartPoleSparseWrapper, CartPoleToughWrapper, LunarLanderToughWrapper, make_env_with_config
+  runner/              # orchestration
+    experiment.py      # Condition, Experiment: multi-seed parallel runner
+    train.py           # train(): single run lifecycle
+  infra/
     config.py         # EDERConfig dataclass + ENV_PRESETS + make_config()
     logging.py        # RunLogger: CSV + stdout + optional W&B
     seeding.py        # seed_everything()
-  experiment.py       # Condition, Experiment: multi-seed parallel runner
-  train.py            # train(): single run lifecycle
 
-experiments/          # runnable experiment scripts
-runs/                 # per-seed run dirs plus experiment-level comparison plots
+experiments/
+  ddqn/                # all conditions built on DDQN (baseline, es, novelty, es_novelty, compare_all)
+scripts/
+  build_results.py    # exports runs/ -> results/
+results/              # published final numbers (tracked)
+runs/                 # per-seed run dirs plus experiment-level comparison plots (local only)
 tests/                # pytest suite
 ```
 
