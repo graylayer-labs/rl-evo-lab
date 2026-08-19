@@ -20,6 +20,30 @@ wheels = [
 ]
 
 [[package]]
+name = "ale-py"
+version = "0.12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/96/f2/4256e8074df976edd3ba28be9b6a2f4b3fc47632134dabfead41d32b51be/ale_py-0.12.0.tar.gz", hash = "sha256:6030416b6a049d399bf95420ad2fdbf0ea8f83051b502774d27b477a06000dbc", size = 19597784, upload-time = "2026-05-30T22:37:38.922Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f2/15/ee091176ea850ca2242420cc9d5f8f94b9e037793926e7c5e6bfecb18684/ale_py-0.12.0-cp312-cp312-macosx_13_0_arm64.whl", hash = "sha256:b0716abea9ed5e1f0d3c0fd08820226458be1b568d25e9e969b22774a993f3d3", size = 2199417, upload-time = "2026-05-30T22:37:19.222Z" },
+    { url = "https://files.pythonhosted.org/packages/49/22/fb5aeedccc24c23063edbfa6ab135f620211a9da25c2dcbeecd326ee2490/ale_py-0.12.0-cp312-cp312-macosx_26_0_arm64.whl", hash = "sha256:18ab4d89639c2c39f73cf9e15f7c14de9cde57252deee67964a91261b6ca6181", size = 2074353, upload-time = "2026-05-30T22:37:20.651Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/bb/2a53135d0a4f9bc2f383204e8e076855f9fbcaee6968b898af981f79d60e/ale_py-0.12.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:8c9f956ba56404c47103f35cfda3333ddd703c43a36589fa95515a08034a33af", size = 2946702, upload-time = "2026-05-30T22:37:21.888Z" },
+    { url = "https://files.pythonhosted.org/packages/77/23/7cb1ea63c3694de96c3b3201dcc361c10bb8acf2d81ac8ff31beb25b9241/ale_py-0.12.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e211044d60bed30720b71e71f003e42dabb0b7f0a6c03be6b70d3b4650de0dad", size = 3087155, upload-time = "2026-05-30T22:37:23.224Z" },
+    { url = "https://files.pythonhosted.org/packages/21/e9/7d9dc3ae2e1025b97a28c80fb381ab2c4ce216ac5a09e0268c3a5a915ab9/ale_py-0.12.0-cp312-cp312-win_amd64.whl", hash = "sha256:847f766c2712d67ab66bb90e1c9ca1fbd0a63e940258bd82c4b4d96c5d950eca", size = 1751212, upload-time = "2026-05-30T22:37:24.641Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/82/5a8b836f8a89377e40b2fe7d083116e997d6064e91e6de0ddf72328b37b6/ale_py-0.12.0-cp313-cp313-macosx_13_0_arm64.whl", hash = "sha256:b0935d02b1d1aca7ddf197919faf4f082084012b3f7349ef47638381bf2c926c", size = 2199601, upload-time = "2026-05-30T22:37:26.402Z" },
+    { url = "https://files.pythonhosted.org/packages/81/88/18566debda07d211f83feab6ed91238ded5fceda09c768084069217a3342/ale_py-0.12.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9904d5654b30c50d4f460aa59558b74d7110d8580ac3109f9142d157bd76fd7a", size = 2946508, upload-time = "2026-05-30T22:37:27.932Z" },
+    { url = "https://files.pythonhosted.org/packages/51/76/1d7d6ffc7a5e0fd4231f945862482f890a019e2af9d0418a47b051f46b58/ale_py-0.12.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:766aba0477e96295f191113de563c454efb21aa540f9246f0d6f11da6333586b", size = 3087036, upload-time = "2026-05-30T22:37:29.672Z" },
+    { url = "https://files.pythonhosted.org/packages/50/36/80f969118556247d7e00abe921e469a8a54c237677ced337f88da8165dd4/ale_py-0.12.0-cp313-cp313-win_amd64.whl", hash = "sha256:a9e7acfa66cbed02147b7b125090c87d0f2d0b3185529074da76d9fb4085bddd", size = 1751042, upload-time = "2026-05-30T22:37:30.913Z" },
+    { url = "https://files.pythonhosted.org/packages/89/93/fe9455002287c33f1922a372026e43267fd212c8b6d9270309f7ca448b16/ale_py-0.12.0-cp314-cp314-macosx_13_0_arm64.whl", hash = "sha256:9c798b73f35c3314a6ca3da80f3171c09aca8f45a159af0cb539a96e6af0206e", size = 2199930, upload-time = "2026-05-30T22:37:32.222Z" },
+    { url = "https://files.pythonhosted.org/packages/36/35/748cca103d289a1fbe3cf552b75cef79b710731ed7d1a777d58050895f2d/ale_py-0.12.0-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:898fa78c49c5e7bf0fe53caed202cc744d21e26af5fcf00bdf0247354d3365a7", size = 2946921, upload-time = "2026-05-30T22:37:33.664Z" },
+    { url = "https://files.pythonhosted.org/packages/10/c3/2231ceb5bfba7056818cb1f460383c14b8a417939c978eb44c3b55514f14/ale_py-0.12.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0006ef4f580f536bdea2368b85005c6598cf0c1aea729e3c373414c625ecebd4", size = 3087198, upload-time = "2026-05-30T22:37:34.961Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/48/dfdc2e11e4681082a93ed66a1dbff43f83d142f650f1c8bd559e9b4696bf/ale_py-0.12.0-cp314-cp314-win_amd64.whl", hash = "sha256:e2d7d16ae81c2408db463556e38ea3629ccace5d0fa0d9859a24cb2bf7ef513f", size = 1797451, upload-time = "2026-05-30T22:37:36.519Z" },
+]
+
+[[package]]
 name = "annotated-types"
 version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -27,6 +51,34 @@ sdist = { url = "https://files.pythonhosted.org/packages/5f/56/a8120250d128bed16
 wheels = [
     { url = "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl", hash = "sha256:f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0", size = 13427, upload-time = "2026-07-23T20:16:12.938Z" },
 ]
+
+[[package]]
+name = "autorom"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5b/22/bce7442af5e6961e5a7434e0aeb64eba17c6e1eff11fc45613d68d22ce60/AutoROM-0.6.1.tar.gz", hash = "sha256:6eff1f1b96a9d519577437f71d96a8d3b896238eca3433a8e69c5c92f6de3231", size = 9204, upload-time = "2023-04-06T15:29:10.223Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/02/e1/90b168a5dbc89a4e9b2206a99238f3ea3fc281052bb2dc236d4aa15e5e87/AutoROM-0.6.1-py3-none-any.whl", hash = "sha256:e734fdad23dc8e48897de013803eba3c9e109e028d5463a4817346f7f669604f", size = 9435, upload-time = "2023-04-06T15:29:06.995Z" },
+]
+
+[package.optional-dependencies]
+accept-rom-license = [
+    { name = "autorom-accept-rom-license" },
+]
+
+[[package]]
+name = "autorom-accept-rom-license"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a1/67/cc207fe30615001ce713e58dd975124985dc6f7e5ac1141f8bb342ebf3fe/AutoROM.accept-rom-license-0.6.1.tar.gz", hash = "sha256:0c905a708d634a076f686802f672817d3585259ce3be0bde8713a4fb59e3159e", size = 434689, upload-time = "2023-04-06T15:29:13.295Z" }
 
 [[package]]
 name = "box2d"
@@ -540,6 +592,9 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+atari = [
+    { name = "ale-py" },
+]
 box2d = [
     { name = "box2d" },
     { name = "pygame-ce" },
@@ -1517,7 +1572,9 @@ name = "rl-evo-lab"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "gymnasium", extra = ["box2d"] },
+    { name = "ale-py" },
+    { name = "autorom", extra = ["accept-rom-license"] },
+    { name = "gymnasium", extra = ["atari", "box2d"] },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
@@ -1546,7 +1603,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gymnasium", extras = ["box2d"], specifier = ">=1.2.3,<2.0.0" },
+    { name = "ale-py", specifier = ">=0.11.2" },
+    { name = "autorom", extras = ["accept-rom-license"], specifier = ">=0.6.1" },
+    { name = "gymnasium", extras = ["box2d", "atari"], specifier = ">=1.2.3,<2.0.0" },
     { name = "gymnasium", extras = ["mujoco"], marker = "extra == 'mujoco'", specifier = ">=1.0" },
     { name = "imageio", marker = "extra == 'viz'", specifier = ">=2.29" },
     { name = "matplotlib", specifier = ">=3.10.8,<4.0.0" },

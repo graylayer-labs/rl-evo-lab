@@ -28,8 +28,8 @@ Plot results:
 
 from runner.experiment import Condition, Experiment
 
-# Novelty-Guided RL condition: use_es=True, use_novelty=True
-_novelty_guided_rl = Condition("Novelty-Guided RL", use_es=True, use_novelty=True)
+# DDQN + ES + Novelty condition: use_es=True, use_novelty=True
+_novelty_guided_rl = Condition("DDQN+ES+Novelty", use_es=True, use_novelty=True)
 
 # Standard seeds for main environments (3 seeds each)
 _standard_seeds = [42, 7, 123]

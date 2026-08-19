@@ -177,7 +177,7 @@ class RunLogger:
                 parts.append("[yellow]sync[/yellow]")
             self._progress.update(self._task_id, advance=1, stats="  ".join(parts))
 
-    def close(self) -> None:
+    def close(self, final_eval_rewards: list[float] | None = None) -> None:
         if self._progress is not None:
             self._progress.stop()
         self._csv_file.close()
@@ -187,10 +187,20 @@ class RunLogger:
         # Write compute summary to status.json
         condition = _condition_label(self.cfg.use_es, self.cfg.use_novelty)
         elapsed = time.time() - self._start_time
-        compute_summary = {
+        compute_summary: dict[str, Any] = {
             "status": "completed",
             "condition": condition,
             "total_env_steps": self._last_total_env_steps,
             "total_wall_clock_seconds": elapsed,
         }
+        if final_eval_rewards is not None:
+            n = len(final_eval_rewards)
+            eval_mean = sum(final_eval_rewards) / n
+            variance = sum((r - eval_mean) ** 2 for r in final_eval_rewards) / n
+            compute_summary["final_eval"] = {
+                "mean": eval_mean,
+                "std": variance**0.5,
+                "n_episodes": n,
+                "episode_rewards": final_eval_rewards,
+            }
         (self._run_dir / "status.json").write_text(json.dumps(compute_summary))

@@ -28,8 +28,8 @@ Plot results:
 
 from runner.experiment import Condition, Experiment
 
-# Evolutionary RL condition: use_es=True, use_novelty=False
-_evolutionary_rl = Condition("Evolutionary RL", use_es=True, use_novelty=False)
+# DDQN + ES condition: use_es=True, use_novelty=False
+_evolutionary_rl = Condition("DDQN+ES", use_es=True, use_novelty=False)
 
 # Standard seeds for main environments (3 seeds each)
 _standard_seeds = [42, 7, 123]

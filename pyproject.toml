@@ -10,7 +10,9 @@ requires-python = ">=3.12"
 dependencies = [
     "torch>=2.3",
     "numpy>=1.26",
-    "gymnasium[box2d]>=1.2.3,<2.0.0",
+    "gymnasium[box2d,atari]>=1.2.3,<2.0.0",
+    "ale-py>=0.11.2",
+    "autorom[accept-rom-license]>=0.6.1",
     "wandb (>=0.25.1,<0.26.0)",
     "matplotlib (>=3.10.8,<4.0.0)",
     "pandas (>=3.0.1,<4.0.0)",

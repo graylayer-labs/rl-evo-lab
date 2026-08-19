@@ -97,13 +97,11 @@ class EDERConfig:
     learner_updates_per_episode: int = 20
     min_buffer_size: int = 1_000
 
-    # Early stopping — prevents wasted compute after solving or stagnating.
-    # Checked at every eval_freq episode. Both conditions are evaluated independently.
+    # Early stopping — stops only on success, never on stagnation. A patience-based
+    # stagnation stop would let different conditions consume different amounts of
+    # compute, undermining the fair-comparison-by-env-steps principle this study
+    # relies on. total_episodes is always run in full unless solved.
     early_stop_solved_window: int = 5  # stop after this many consecutive evals >= solved_reward
-    early_stop_patience: int = (
-        30  # stop if best eval doesn't improve by min_delta for this many evals
-    )
-    early_stop_min_delta: float = 2.0  # minimum reward improvement to reset the patience counter
 
     # Buffer push filtering — selectively gate which worker episodes enter the buffer.
     # None = push everything (backward compatible default).
@@ -121,7 +119,8 @@ class EDERConfig:
     # Eval / logging
     seed: int = 42
     eval_freq: int = 10
-    eval_episodes: int = 20
+    eval_episodes: int = 20  # periodic training-time eval window (noisy, for the learning curve)
+    final_eval_episodes: int = 50  # authoritative post-training test evaluation
     use_wandb: bool = False
     wandb_project: str = "rl-evo-lab"
 
@@ -148,6 +147,7 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "epsilon_decay_episodes": 200,
         "solved_reward": 475.0,
         "novelty_decay_start_reward": 400.0,
+        "final_eval_episodes": 100,
     },
     # CartPole-Sparse: Category: discrete_sparse_long
     # Reward = 0 per step, +500 only at episode completion (test sparse-reward learning)
@@ -168,6 +168,7 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "epsilon_decay_episodes": 200,
         "solved_reward": 475.0,  # 95% of max episode length (500 steps)
         "novelty_decay_start_reward": 400.0,
+        "final_eval_episodes": 100,
         # Sparse variant flag: wrapper produces 0/step, +500 at terminal success
         "_sparse": True,
     },
@@ -220,6 +221,7 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "novelty_warmup_episodes": 100,
         "solved_reward": 200.0,
         "novelty_decay_start_reward": 150.0,
+        "final_eval_episodes": 50,
     },
     # LunarLander-Tough: random start + tight landing zone (±0.1 pad center) + 2000 step limit
     "lunarlander_tough": {
@@ -267,6 +269,7 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         "novelty_ramp_episodes": 300,
         "solved_reward": -100.0,
         "novelty_decay_start_reward": -130.0,
+        "final_eval_episodes": 50,
     },
     # MountainCar-v0 — solved at -110. Continuous actions, sparse reward, long episodes.
     # Dense negative reward (-1/step), but agent must discover momentum-building behaviour.
@@ -293,12 +296,12 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
     # Montezuma's Revenge (RAM observations) — sparse/deceptive exploration benchmark
     # Category: discrete_sparse_hard (sparse, long episodes, hard exploration)
     # RAM variant: 128-byte flat observation (no image encoder needed)
-    # Single-seed exploratory baseline with capped episode budget
+    # Full study status: 3 seeds, same as every other environment.
     "montezuma": {
-        "env_id": "ALE/MontezumaRevenge-ram-v5",
+        "env_id": "ALE/MontezumaRevenge-v5",  # obs_type="ram" selected in make_env_with_config
         "obs_dim": 128,
         "act_dim": 18,
-        "total_episodes": 500,  # capped budget for exploratory baseline (1 seed only)
+        "total_episodes": 500,  # capped budget given the compute cost of this env
         "buffer_capacity": 100_000,
         "min_buffer_size": 5_000,
         "es_sigma": 0.15,
@@ -314,6 +317,7 @@ ENV_PRESETS: dict[str, dict[str, Any]] = {
         # Solved threshold: no fixed target; documenting failure/success modes
         "solved_reward": 1000.0,  # optimistic ceiling for exploration progress
         "novelty_decay_start_reward": 500.0,
+        "final_eval_episodes": 20,
     },
 }
 

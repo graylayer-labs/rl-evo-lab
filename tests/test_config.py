@@ -5,6 +5,33 @@ import pytest
 from infra.config import ENV_CATEGORIES, ENV_PRESETS, EDERConfig, make_config
 
 
+class TestFinalEvalEpisodes:
+    """Verify final_eval_episodes is set per the confirmed study-env sizes."""
+
+    @pytest.mark.parametrize(
+        ("env_name", "expected"),
+        [
+            ("cartpole", 100),
+            ("cartpole_sparse", 100),
+            ("lunarlander", 50),
+            ("acrobot", 50),
+            ("montezuma", 20),
+        ],
+    )
+    def test_study_env_final_eval_episodes(self, env_name: str, expected: int) -> None:
+        cfg = make_config(env_name)
+        assert cfg.final_eval_episodes == expected, (
+            f"{env_name} should have final_eval_episodes={expected}, "
+            f"got {cfg.final_eval_episodes}"
+        )
+
+    def test_no_stagnation_early_stop_fields(self) -> None:
+        """The stagnation-based early stop was removed; these fields must not exist."""
+        cfg = EDERConfig()
+        assert not hasattr(cfg, "early_stop_patience")
+        assert not hasattr(cfg, "early_stop_min_delta")
+
+
 class TestEnvCategoriesWired:
     """Verify ENV_CATEGORIES are wired into make_config() correctly."""
 

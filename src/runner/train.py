@@ -63,10 +63,8 @@ def train(
     last_eval = 0.0
     cumulative_env_steps = 0
 
-    # Early stopping state
+    # Early stopping state — success-only. See EDERConfig.early_stop_solved_window.
     _solved_streak = 0  # consecutive eval windows at or above solved_reward
-    _best_eval = -float("inf")  # best eval seen so far
-    _stale_count = 0  # consecutive eval windows without meaningful improvement
 
     for episode in range(cfg.total_episodes):
         eval_reward = None
@@ -105,17 +103,11 @@ def train(
                     actor.sync_from_learner(learner.get_weights())
                     did_sync = True
 
-            # Early stopping trackers — updated every eval window
+            # Early stopping tracker — updated every eval window
             if last_eval >= cfg.solved_reward:
                 _solved_streak += 1
             else:
                 _solved_streak = 0
-
-            if last_eval > _best_eval + cfg.early_stop_min_delta:
-                _best_eval = last_eval
-                _stale_count = 0
-            else:
-                _stale_count += 1
 
         # Periodic pre-solve sync: pulls ES toward learner before it fully solves,
         # preventing the actor from diverging too far. Skipped when solved (handled above).
@@ -142,13 +134,15 @@ def train(
         )
 
         # Check early stopping after logging so the final episode is always in the CSV
-        if episode % cfg.eval_freq == 0:
-            if _solved_streak >= cfg.early_stop_solved_window:
-                break
-            if _stale_count >= cfg.early_stop_patience:
-                break
+        if episode % cfg.eval_freq == 0 and _solved_streak >= cfg.early_stop_solved_window:
+            break
 
-    logger.close()
+    # Authoritative post-training evaluation — fresh held-out episodes, distinct
+    # seed range from the periodic training-time eval above (which uses +10_000).
+    final_eval_rewards = learner.evaluate_episodes(
+        eval_env, cfg.final_eval_episodes, seed_offset=20_000
+    )
+    logger.close(final_eval_rewards=final_eval_rewards)
     collect_env.close()
     eval_env.close()
 

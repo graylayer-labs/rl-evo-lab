@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,54 @@ def test_short_run(tmp_path: Path):
     env_dir = next(tmp_path.iterdir())
     run_dir = next(env_dir.iterdir())
     assert (run_dir / "metrics.csv").exists()
+
+
+def test_run_does_not_stop_early_when_never_solved(tmp_path: Path):
+    """Regression test: a run that never reaches solved_reward must still use
+    its full total_episodes budget — no stagnation-based early stop. An
+    unreachable solved_reward guarantees the run never solves."""
+    cfg = EDERConfig(
+        total_episodes=12,
+        use_es=False,
+        min_buffer_size=1,
+        eval_freq=2,
+        eval_episodes=1,
+        solved_reward=1_000_000.0,
+        seed=0,
+    )
+    train(cfg, log_dir=str(tmp_path))
+    env_dir = next(tmp_path.iterdir())
+    run_dir = next(env_dir.iterdir())
+
+    with open(run_dir / "metrics.csv") as f:
+        rows = f.readlines()[1:]  # skip header
+    assert len(rows) == cfg.total_episodes, (
+        f"Expected all {cfg.total_episodes} episodes logged, got {len(rows)} — "
+        "run must not stop early due to stagnation"
+    )
+
+
+def test_final_eval_written_to_status(tmp_path: Path):
+    cfg = EDERConfig(
+        total_episodes=3,
+        use_es=False,
+        min_buffer_size=1,
+        eval_freq=2,
+        eval_episodes=1,
+        final_eval_episodes=4,
+        seed=0,
+    )
+    train(cfg, log_dir=str(tmp_path))
+    env_dir = next(tmp_path.iterdir())
+    run_dir = next(env_dir.iterdir())
+
+    status = json.loads((run_dir / "status.json").read_text())
+    assert "final_eval" in status, f"final_eval key missing in {status}"
+    final_eval = status["final_eval"]
+    assert final_eval["n_episodes"] == cfg.final_eval_episodes
+    assert len(final_eval["episode_rewards"]) == cfg.final_eval_episodes
+    assert isinstance(final_eval["mean"], float)
+    assert isinstance(final_eval["std"], float)
 
 
 # ---------------------------------------------------------------------------
