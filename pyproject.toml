@@ -3,7 +3,7 @@ name = "rl-evo-lab"
 version = "0.1.0"
 description = "Evolutionary Reinforcement Learning: reproduction and extension of EDER"
 authors = [
-    {name = "eoinmcallister", email = "eoinmc.james@gmail.com"}
+    {name = "eoinmcallister", email = "68905612+eoin-james@users.noreply.github.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
